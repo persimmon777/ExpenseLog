@@ -122,8 +122,8 @@ enum DataFile {
 enum SharedSettings {
     enum Key {
         static let theme = "theme"
-        /// Свои цвета тем (фон и основной цвет), JSON — см. `ThemeColors`.
-        static let themeColors = "themeColors"
+        /// Выбранная палитра каждой темы, JSON — см. `ThemePalettes`.
+        static let themePalettes = "themePalettes"
         /// Security-scoped bookmark папки для автокопий (см. CLAUDE.md, «Резервная копия»).
         static let backupFolderBookmark = "backupFolderBookmark"
         static let lastBackupDate = "lastBackupDate"

@@ -5,12 +5,12 @@ struct SpentApp: App {
     @StateObject private var store = SpentStore()
     @AppStorage(SharedSettings.Key.theme, store: AppGroup.defaults)
     private var themeRaw: String = ThemeID.receipt.rawValue
-    @AppStorage(SharedSettings.Key.themeColors, store: AppGroup.defaults)
-    private var themeColorsRaw: String = ""
+    @AppStorage(SharedSettings.Key.themePalettes, store: AppGroup.defaults)
+    private var themePalettesRaw: String = ""
     @Environment(\.scenePhase) private var scenePhase
 
     private var theme: Theme {
-        Theme.forID(ThemeID(rawValue: themeRaw) ?? .receipt, overrides: ThemeColors.decode(themeColorsRaw))
+        Theme.forID(ThemeID(rawValue: themeRaw) ?? .receipt, palettes: ThemePalettes.decode(themePalettesRaw))
     }
 
     var body: some Scene {
