@@ -7,6 +7,7 @@ struct MerchantsView: View {
 
     @State private var search = ""
     @State private var editing: MerchantSummary?
+    @State private var editingGroup: MerchantGroup?
 
     var body: some View {
         let all = store.data.merchants()
@@ -20,7 +21,11 @@ struct MerchantsView: View {
             }
             ForEach(shown) { merchant in
                 Button {
-                    editing = merchant
+                    if let groupID = merchant.groupID {
+                        editingGroup = store.data.merchantGroups.first { $0.id == groupID }
+                    } else {
+                        editing = merchant
+                    }
                 } label: {
                     row(merchant)
                 }
@@ -33,6 +38,13 @@ struct MerchantsView: View {
         .themedBackground(theme)
         .navigationTitle("Магазины")
         .searchable(text: $search, prompt: "Поиск")
+        .sheet(item: $editingGroup) { group in
+            MerchantGroupEditSheet(group: group)
+                .environmentObject(store)
+                .environment(\.theme, theme)
+                .preferredColorScheme(theme.colorScheme)
+                .tint(theme.accent)
+        }
         .sheet(item: $editing) { merchant in
             MerchantEditSheet(merchantKey: merchant.key, originalName: merchant.originalName)
                 .environmentObject(store)

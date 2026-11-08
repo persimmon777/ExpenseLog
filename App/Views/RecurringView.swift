@@ -29,7 +29,7 @@ struct RecurringView: View {
 
             Section {
                 if upcoming.isEmpty {
-                    Text("Добавьте подписки, связь, аренду или зарплату кнопкой «+» — Spent напомнит заранее.")
+                    Text("Добавьте подписки, связь, аренду или зарплату кнопкой «+» — Coin напомнит заранее.")
                         .font(.footnote)
                         .foregroundStyle(theme.inkSoft)
                         .listRowBackground(theme.paper)

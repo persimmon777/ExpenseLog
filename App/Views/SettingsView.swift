@@ -52,6 +52,11 @@ struct SettingsView: View {
                         Text("Импорт истории SMS")
                     }
                     NavigationLink {
+                        MerchantGroupsView()
+                    } label: {
+                        LabeledContent("Группы магазинов", value: "\(store.data.merchantGroups.count)")
+                    }
+                    NavigationLink {
                         MerchantsView()
                     } label: {
                         LabeledContent("Магазины", value: "\(store.data.merchants().count)")

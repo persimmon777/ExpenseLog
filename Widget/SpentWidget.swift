@@ -26,6 +26,8 @@ struct TodayEntry: TimelineEntry {
     let canSpend: Decimal?
     /// Перенесено с прошлых дней.
     let carried: Decimal
+    /// Перерасход только за сегодня (виджет показывает только его).
+    let overspentToday: Decimal
     /// Виджет видит общую папку с данными приложения.
     let isShared: Bool
     let theme: Theme
@@ -38,7 +40,7 @@ struct TodayEntry: TimelineEntry {
             TopCategory(name: "Кафе", emoji: "☕️", colorHex: "F3A712", total: 6.6),
             TopCategory(name: "Транспорт", emoji: "🚌", colorHex: "00A6A6", total: 4.5)
         ],
-        dayPlan: 25, canSpend: 1.6, carried: 5, isShared: true, theme: .receipt
+        dayPlan: 25, canSpend: 1.6, carried: 5, overspentToday: 0, isShared: true, theme: .receipt
     )
 }
 
@@ -70,7 +72,8 @@ struct TodayProvider: TimelineProvider {
             date: now, total: total, count: today.count,
             lastTitle: last.map { data.displayTitle(for: $0) }, lastAmount: last?.amount,
             top: Array(top), dayPlan: data.dayAllowance(now), canSpend: data.canSpendToday(now: now),
-            carried: data.carriedIntoToday(now: now), isShared: AppGroup.isShared, theme: Theme.current
+            carried: data.carriedIntoToday(now: now), overspentToday: data.overspentToday(now: now),
+            isShared: AppGroup.isShared, theme: Theme.current
         )
     }
 }
@@ -86,9 +89,61 @@ struct TodayWidget: Widget {
     }
 }
 
+// MARK: - Баланс карты
+
+struct BalanceEntry: TimelineEntry {
+    let date: Date
+    let balance: Decimal?
+    let balanceDate: Date?
+    let isManual: Bool
+    /// Сколько ещё можно сегодня (nil — план не задан).
+    let canSpend: Decimal?
+    /// Перерасход только за сегодня.
+    let overspentToday: Decimal
+    let isShared: Bool
+    let theme: Theme
+
+    static let sample = BalanceEntry(date: Date(), balance: 512.4, balanceDate: Date(), isManual: false,
+                                     canSpend: 8.4, overspentToday: 0, isShared: true, theme: .receipt)
+}
+
+struct BalanceProvider: TimelineProvider {
+    func placeholder(in context: Context) -> BalanceEntry { .sample }
+
+    func getSnapshot(in context: Context, completion: @escaping (BalanceEntry) -> Void) {
+        completion(context.isPreview ? .sample : makeEntry())
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<BalanceEntry>) -> Void) {
+        // Обновляется после каждой операции (reloadAllTimelines) и в полночь — новый лимит дня.
+        let tomorrow = Fmt.calendar.date(byAdding: .day, value: 1, to: Date()) ?? Date().addingTimeInterval(86_400)
+        completion(Timeline(entries: [makeEntry()], policy: .after(Fmt.calendar.startOfDay(for: tomorrow))))
+    }
+
+    private func makeEntry() -> BalanceEntry {
+        let data = DataFile.load()
+        let now = Date()
+        return BalanceEntry(date: now, balance: data.lastBalance, balanceDate: data.lastBalanceDate,
+                            isManual: data.balanceSetManually, canSpend: data.canSpendToday(now: now),
+                            overspentToday: data.overspentToday(now: now), isShared: AppGroup.isShared, theme: Theme.current)
+    }
+}
+
+struct BalanceWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "SpentBalance", provider: BalanceProvider()) { entry in
+            BalanceWidgetView(entry: entry)
+        }
+        .configurationDisplayName("Баланс и можно сегодня")
+        .description("Остаток на карте и сколько ещё можно потратить сегодня.")
+        .supportedFamilies([.systemSmall, .accessoryRectangular, .accessoryInline])
+    }
+}
+
 @main
 struct SpentWidgetBundle: WidgetBundle {
     var body: some Widget {
         TodayWidget()
+        BalanceWidget()
     }
 }

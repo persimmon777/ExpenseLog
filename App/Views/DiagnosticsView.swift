@@ -25,7 +25,7 @@ struct DiagnosticsView: View {
                 }
             }
             Section {
-                Text("1. В SideStore откройте настройки и включите «Auto-Fix AppGroup IDs» (если такой пункт есть).\n2. Переустановите Spent по ссылке — данные не пропадут, Spent сам перенесёт их в общую папку.\n3. Удалите виджет и добавьте заново.")
+                Text("1. Если ставите через SideStore — включите в его настройках «Auto-Fix AppGroup IDs». Если через iloader — пришлите скриншот этого экрана.\n2. Переустановите Coin — данные не пропадут, Coin сам перенесёт их в общую папку.\n3. Удалите виджет и добавьте заново.")
                     .font(.footnote)
                     .foregroundStyle(theme.inkSoft)
             } header: {
