@@ -107,6 +107,47 @@ enum Notifier {
         let data = DataFile.load()
         await scheduleWeekly(data, now: now)
         await scheduleDebts(data, now: now)
+        await scheduleRecurring(data, now: now)
+    }
+
+    /// Платёж — накануне в 19:00, поступление — в день в 10:00.
+    private static func scheduleRecurring(_ data: AppData, now: Date) async {
+        let pending = await center.pendingNotificationRequests()
+        let old = pending.map(\.identifier).filter { $0.hasPrefix("recurring-") }
+        center.removePendingNotificationRequests(withIdentifiers: old)
+        guard SharedSettings.isEnabled(SharedSettings.Key.notifyRecurring) else { return }
+        let cal = Fmt.calendar
+        for item in data.recurring where item.isActive && !item.isUpcomingPaid(now: now) {
+            // Две ближайшие даты — чтобы напоминание не пропало, если сегодняшнее уже прошло.
+            var day = item.nextDate(onOrAfter: now)
+            for _ in 0..<2 {
+                let fire: Date?
+                if item.isIncome {
+                    fire = cal.date(bySettingHour: 10, minute: 0, second: 0, of: day)
+                } else {
+                    fire = cal.date(byAdding: .day, value: -1, to: day).flatMap { cal.date(bySettingHour: 19, minute: 0, second: 0, of: $0) }
+                }
+                if let fire, fire > now {
+                    let parts = cal.dateComponents([.year, .month, .day, .hour, .minute], from: fire)
+                    let money = Fmt.money(item.amount, currency: item.currency)
+                    let body = item.isIncome
+                        ? "Сегодня ожидается поступление: \(item.title) +\(money)"
+                        : "Завтра списание: \(item.title) \(money)"
+                    await add(id: "recurring-\(item.id.uuidString)-\(Fmt.dayKey(day))", body: body,
+                              trigger: UNCalendarNotificationTrigger(dateMatching: parts, repeats: false))
+                    break
+                }
+                guard let next = cal.date(byAdding: .day, value: 1, to: day) else { break }
+                day = item.nextDate(onOrAfter: next)
+            }
+        }
+    }
+
+    /// «Отмечено само: Молоко — список покупок» (после автодобавления SMS).
+    static func notifyMatched(_ titles: [String]) async {
+        guard !titles.isEmpty, await isAuthorized() else { return }
+        await add(id: "matched-\(UUID().uuidString)", body: "Отмечено само: " + titles.joined(separator: "; "),
+                  trigger: UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false))
     }
 
     /// Пробное уведомление через 5 секунд.

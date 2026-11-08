@@ -22,6 +22,11 @@ struct SettingsView: View {
                         LabeledContent("Оформление", value: "\(themeID.title) · \(palette.name)")
                     }
                     NavigationLink {
+                        RecurringView()
+                    } label: {
+                        LabeledContent("Регулярные платежи", value: "\(store.data.recurring.filter { $0.isActive }.count)")
+                    }
+                    NavigationLink {
                         WeeklyPlanView()
                     } label: {
                         LabeledContent("План трат", value: store.data.currentBasePlan.map { "\(Fmt.money($0)) в неделю" } ?? "не задан")

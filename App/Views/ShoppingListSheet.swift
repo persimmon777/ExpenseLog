@@ -59,6 +59,9 @@ struct ShoppingListSheet: View {
                     if toBuy.isEmpty && !isAdding {
                         Text("Нажмите «+», чтобы добавить, что собираетесь купить, и примерную цену — сумма появится на главной.")
                             .foregroundStyle(theme.inkSoft)
+                    } else if !toBuy.isEmpty {
+                        Text("Проведите вправо → «Изменить», чтобы указать магазин: пункт отметится сам, когда придёт оплата.")
+                            .foregroundStyle(theme.inkSoft)
                     }
                 }
 
@@ -152,9 +155,16 @@ struct ShoppingListSheet: View {
                 Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle")
                     .font(.title3)
                     .foregroundStyle(item.isDone ? theme.positive : theme.inkSoft)
-                Text(item.title)
-                    .foregroundStyle(item.isDone ? theme.inkSoft : theme.ink)
-                    .strikethrough(item.isDone, color: theme.inkSoft)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(item.title)
+                        .foregroundStyle(item.isDone ? theme.inkSoft : theme.ink)
+                        .strikethrough(item.isDone, color: theme.inkSoft)
+                    if let shop = item.merchantName {
+                        Text(item.matchedTransactionID != nil && item.isDone ? "отмечено само · \(shop)" : "в \(shop) · отметится само")
+                            .font(.caption2)
+                            .foregroundStyle(item.matchedTransactionID != nil && item.isDone ? theme.positive : theme.inkSoft)
+                    }
+                }
                 Spacer(minLength: 8)
                 Text(item.price.map { Fmt.money($0) } ?? "—")
                     .font(theme.amountFont(.body))
@@ -171,6 +181,13 @@ struct ShoppingListSheet: View {
                 store.mutate { $0.deleteShoppingItem(id) }
             } label: {
                 Label("Удалить", systemImage: "trash")
+            }
+        }
+        .contextMenu {
+            Button {
+                editing = item
+            } label: {
+                Label("Изменить", systemImage: "pencil")
             }
         }
         .swipeActions(edge: .leading) {

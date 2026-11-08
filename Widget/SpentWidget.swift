@@ -20,7 +20,12 @@ struct TodayEntry: TimelineEntry {
     let lastTitle: String?
     let lastAmount: Decimal?
     let top: [TopCategory]
+    /// Сколько всего можно сегодня (дневной план + перенос с прошлых дней).
     let dayPlan: Decimal?
+    /// Сколько ещё можно потратить сегодня (отрицательное — перерасход).
+    let canSpend: Decimal?
+    /// Перенесено с прошлых дней.
+    let carried: Decimal
     let theme: Theme
 
     static let sample = TodayEntry(
@@ -31,7 +36,7 @@ struct TodayEntry: TimelineEntry {
             TopCategory(name: "Кафе", emoji: "☕️", colorHex: "F3A712", total: 6.6),
             TopCategory(name: "Транспорт", emoji: "🚌", colorHex: "00A6A6", total: 4.5)
         ],
-        dayPlan: 20, theme: .receipt
+        dayPlan: 25, canSpend: 1.6, carried: 5, theme: .receipt
     )
 }
 
@@ -62,7 +67,8 @@ struct TodayProvider: TimelineProvider {
         return TodayEntry(
             date: now, total: total, count: today.count,
             lastTitle: last.map { data.displayTitle(for: $0) }, lastAmount: last?.amount,
-            top: Array(top), dayPlan: data.dayPlan(now), theme: Theme.current
+            top: Array(top), dayPlan: data.dayAllowance(now), canSpend: data.canSpendToday(now: now),
+            carried: data.carriedIntoToday(now: now), theme: Theme.current
         )
     }
 }
@@ -73,7 +79,7 @@ struct TodayWidget: Widget {
             TodayWidgetView(entry: entry)
         }
         .configurationDisplayName("Траты за сегодня")
-        .description("Сколько потрачено сегодня, последняя покупка и главные категории.")
+        .description("Сколько ещё можно потратить сегодня, с учётом остатка прошлых дней.")
         .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular, .accessoryInline])
     }
 }

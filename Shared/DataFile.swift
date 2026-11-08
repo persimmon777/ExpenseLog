@@ -145,6 +145,7 @@ enum SharedSettings {
         static let notifyWeeklySummary = "notifyWeeklySummary"
         static let notifyLimits = "notifyLimits"
         static let notifyDebts = "notifyDebts"
+        static let notifyRecurring = "notifyRecurring"
         /// Когда последний раз сработала команда «Добавить SMS банка» и что она сделала.
         static let lastAutoAddDate = "lastAutoAddDate"
         static let lastAutoAddResult = "lastAutoAddResult"

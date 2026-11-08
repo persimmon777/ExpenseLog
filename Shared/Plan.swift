@@ -39,6 +39,52 @@ extension AppData {
         return week / 7
     }
 
+    // MARK: «Можно сегодня» с переносом
+
+    /// Траты за календарный день.
+    private func spent(onDay day: Date) -> Decimal {
+        expenseTotal(onDay: day)
+    }
+
+    /// Что переходит с воскресенья на понедельник: только дневная часть плана воскресенья
+    /// минус траты воскресенья (без накопленного за неделю). Перерасход воскресенья уменьшает понедельник.
+    private func sundayCarry(intoWeekStarting monday: Date) -> Decimal {
+        guard let sunday = Fmt.calendar.date(byAdding: .day, value: -1, to: monday),
+              let base = dayPlan(sunday) else { return 0 }
+        return base - spent(onDay: sunday)
+    }
+
+    /// Сколько всего можно потратить в этот день: дневная часть плана + остаток прошлых дней недели.
+    /// Неистраченное прибавляется, перерасход вычитается (может стать отрицательным).
+    /// Неделя начинается заново с понедельника; на понедельник переходит только итог воскресенья.
+    func dayAllowance(_ date: Date) -> Decimal? {
+        let cal = Fmt.calendar
+        let day = cal.startOfDay(for: date)
+        guard dayPlan(day) != nil else { return nil }
+        let monday = weekStart(day)
+        var current = monday
+        var allowance = (dayPlan(monday) ?? 0) + sundayCarry(intoWeekStarting: monday)
+        while current < day {
+            let leftover = allowance - spent(onDay: current)
+            guard let next = cal.date(byAdding: .day, value: 1, to: current) else { break }
+            current = next
+            allowance = (dayPlan(current) ?? 0) + leftover
+        }
+        return allowance
+    }
+
+    /// Сколько ещё можно потратить сегодня (отрицательное — перерасход).
+    func canSpendToday(now: Date = Date()) -> Decimal? {
+        guard let allowance = dayAllowance(now) else { return nil }
+        return allowance - spent(onDay: now)
+    }
+
+    /// Перенесено на сегодня с прошлых дней: плюс — остаток, минус — перерасход.
+    func carriedIntoToday(now: Date = Date()) -> Decimal {
+        guard let allowance = dayAllowance(now), let base = dayPlan(now) else { return 0 }
+        return allowance - base
+    }
+
     /// План на месяц = сумма дневных планов всех дней месяца.
     func monthPlan(containing date: Date) -> Decimal? {
         let cal = Fmt.calendar
@@ -60,7 +106,7 @@ extension AppData {
     /// План на период аналитики.
     func plan(_ period: AnalyticsPeriod, containing date: Date) -> Decimal? {
         switch period {
-        case .day: return dayPlan(date)
+        case .day: return dayAllowance(date)
         case .week: return weekPlan(containing: date)
         case .month: return monthPlan(containing: date)
         }
@@ -68,7 +114,8 @@ extension AppData {
 
     /// «Потрачено из плана» за период — для полоски.
     func planStatus(_ period: AnalyticsPeriod, containing date: Date = Date()) -> LimitStatus? {
-        guard let plan = plan(period, containing: date), plan > 0 else { return nil }
+        // День может уйти в минус из-за перерасхода прошлых дней — его всё равно показываем.
+        guard let plan = plan(period, containing: date), plan > 0 || period == .day else { return nil }
         return LimitStatus(spent: expenseTotal(in: period.component, containing: date), limit: plan)
     }
 

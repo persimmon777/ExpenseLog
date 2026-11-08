@@ -18,7 +18,8 @@ struct LimitStatus {
 
     /// Доля потраченного (0…∞). `Double` — только для полоски.
     var ratio: Double {
-        guard limit > 0 else { return 0 }
+        // Лимита нет совсем (день ушёл в минус из-за перерасхода) — сразу «исчерпан».
+        guard limit > 0 else { return (spent > 0 || limit < 0) ? 1 : 0 }
         return NSDecimalNumber(decimal: spent / limit).doubleValue
     }
 

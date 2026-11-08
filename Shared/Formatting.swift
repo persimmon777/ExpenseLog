@@ -62,6 +62,11 @@ enum Fmt {
         return "\(dayMonth(start)) – \(dayMonth(last))"
     }
 
+    private static let weekdayFormatter = formatter("EEEE")
+
+    /// «среда».
+    static func weekdayName(_ date: Date) -> String { weekdayFormatter.string(from: date) }
+
     /// «Ноябрь 2026».
     static func monthYear(_ date: Date) -> String {
         let s = monthYearFormatter.string(from: date)

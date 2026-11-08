@@ -10,6 +10,7 @@ struct NotificationSettingsView: View {
     @AppStorage(SharedSettings.Key.notifyWeeklySummary, store: AppGroup.defaults) private var weekly = true
     @AppStorage(SharedSettings.Key.notifyLimits, store: AppGroup.defaults) private var limits = true
     @AppStorage(SharedSettings.Key.notifyDebts, store: AppGroup.defaults) private var debts = true
+    @AppStorage(SharedSettings.Key.notifyRecurring, store: AppGroup.defaults) private var recurring = true
 
     @State private var authorized = true
     @State private var testSent = false
@@ -35,6 +36,9 @@ struct NotificationSettingsView: View {
                 Toggle(isOn: $debts) {
                     label("Долги", "В день возврата в 10:00: «Сегодня Петя должен вернуть 20 BYN».")
                 }
+                Toggle(isOn: $recurring) {
+                    label("Регулярные платежи", "Накануне списания в 19:00 и в день поступления в 10:00.")
+                }
             }
             .tint(theme.accent)
             Section {
@@ -58,6 +62,7 @@ struct NotificationSettingsView: View {
         .onChange(of: weekly) { _, _ in changed() }
         .onChange(of: limits) { _, _ in changed() }
         .onChange(of: debts) { _, _ in changed() }
+        .onChange(of: recurring) { _, _ in changed() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await updateStatus() } }
         }
