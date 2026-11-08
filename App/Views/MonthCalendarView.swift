@@ -16,6 +16,8 @@ struct MonthCalendarView: View {
     let onSelectDay: (Date) -> Void
     let onSelectWeek: (Date) -> Void
     let onSelectMonth: () -> Void
+    /// Пролистали месяц стрелками ‹ › — статистика переходит на этот месяц.
+    let onShiftMonth: (Date) -> Void
 
     private let weekdays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
     private var cal: Calendar { Fmt.calendar }
@@ -141,6 +143,7 @@ struct MonthCalendarView: View {
     private func shiftMonth(_ delta: Int) {
         if let next = cal.date(byAdding: .month, value: delta, to: month) {
             month = next
+            onShiftMonth(next)
         }
     }
 }
