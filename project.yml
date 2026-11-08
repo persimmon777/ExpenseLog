@@ -1,0 +1,77 @@
+# Описание проекта для XcodeGen. .xcodeproj не храним в репозитории —
+# он генерируется командой `xcodegen generate` (локально на Mac или в GitHub Actions).
+name: Spent
+
+options:
+  bundleIdPrefix: com.saevich
+  deploymentTarget:
+    iOS: "17.0"
+  developmentLanguage: ru
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1"
+    # Подписи в сборке нет: .ipa подписывает SideStore на телефоне.
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+
+targets:
+  Spent:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+      - path: Shared
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: Spent
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        ITSAppUsesNonExemptEncryption: false
+    entitlements:
+      path: App/Spent.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.saevich.spent
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.saevich.spent
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    dependencies:
+      - target: SpentWidget
+    scheme: {}
+
+  SpentWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widget
+      - path: Shared
+    info:
+      path: Widget/Info.plist
+      properties:
+        CFBundleDisplayName: Spent
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: Widget/SpentWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.saevich.spent
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.saevich.spent.widget

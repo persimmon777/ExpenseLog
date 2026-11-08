@@ -1,0 +1,15 @@
+# Генерируется XcodeGen
+*.xcodeproj
+App/Info.plist
+Widget/Info.plist
+
+# Сборка
+build/
+DerivedData/
+Payload/
+*.ipa
+build.log
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
