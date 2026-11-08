@@ -13,6 +13,7 @@ DATE = re.compile(r"DATA\s+(\d{2}\.\d{2}\.\d{4})\s+(\d{2}:\d{2}(?::\d{2})?)", F)
 PLACE = re.compile(r"DATA\s+\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2}(?::\d{2})?\s+(.+?)\s*(?:MCC\s*:|OSTATOK\b|$)", F)
 MCC = re.compile(r"MCC\s*:\s*(\d{4})", F)
 BAL = re.compile(r"OSTATOK\s+(-?\d+(?:[.,]\d{1,2})?)", F)
+MESSAGE = re.compile(r"(?:OPLATA|POPOLNENIE|NALICHNYE).{0,400}?OSTATOK\s+-?\d+(?:[.,]\d{1,2})?\s*[A-Z]{3}", F)
 
 
 def split(text):
@@ -60,4 +61,10 @@ if __name__ == "__main__":
             for k, v in expected.items():
                 assert got and got[k] == v, (text, k, got and got[k], v)
     assert len(split("\n\n".join(t for t, _ in VECTORS))) == 4
+    # Извлечение из «грязного» текста (файл сообщений iPhone): мусор вокруг отбрасывается.
+    junk = "\x01\x02streamtyped NSString +" + VECTORS[0][0] + "\x86\x84 iI NSDictionary\nVash kod 1234\n" + VECTORS[3][0] + " ##"
+    found = [m.group(0) for m in MESSAGE.finditer(junk)]
+    assert len(found) == 2, found
+    assert found[0] == VECTORS[0][0], found[0]
+    assert parse(found[1])["type"] == "cashWithdrawal"
     print("OK: все тест-векторы SMS проходят")

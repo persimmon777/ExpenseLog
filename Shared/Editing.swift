@@ -275,3 +275,21 @@ extension AppData.IngestResult {
         return "Не операция по карте — пропущено"
     }
 }
+
+// MARK: - Импорт истории
+
+extension AppData {
+    /// Разложить неотсортированные траты по подсказке MCC (по желанию при импорте истории).
+    /// Возвращает, сколько трат получили категорию.
+    @discardableResult
+    mutating func applyMCCSuggestions(to ids: Set<UUID>) -> Int {
+        var count = 0
+        for i in transactions.indices where ids.contains(transactions[i].id) && transactions[i].isUncategorized {
+            if let category = suggestedCategory(for: transactions[i]) {
+                transactions[i].categoryID = category.id
+                count += 1
+            }
+        }
+        return count
+    }
+}

@@ -53,6 +53,9 @@ enum SMSParser {
     private static let placeRegex = make(#"DATA\s+\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2}(?::\d{2})?\s+(.+?)\s*(?:MCC\s*:|OSTATOK\b|$)"#)
     private static let mccRegex = make(#"MCC\s*:\s*(\d{4})"#)
     private static let balanceRegex = make(#"OSTATOK\s+(-?\d+(?:[.,]\d{1,2})?)"#)
+    /// Одно SMS целиком внутри «грязного» текста (файл сообщений, экспорт чата):
+    /// от ключевого слова до «OSTATOK <сумма> <валюта>», не длиннее 400 символов.
+    private static let messageRegex = make(#"(?:OPLATA|POPOLNENIE|NALICHNYE).{0,400}?OSTATOK\s+-?\d+(?:[.,]\d{1,2})?\s*[A-Z]{3}"#)
 
     private static func make(_ pattern: String) -> NSRegularExpression {
         // Шаблоны статические и проверены тестами — падение здесь означает ошибку в коде.
@@ -121,6 +124,15 @@ enum SMSParser {
             balance: balance,
             fingerprint: fingerprint(text)
         )
+    }
+
+    /// Достаёт тексты SMS банка из любого текста: файла сообщений iPhone, экспорта чата, заметки.
+    /// Мусор вокруг (служебные байты, даты, имена) отбрасывается.
+    static func extractMessages(from text: String) -> [String] {
+        let ns = text as NSString
+        return messageRegex.matches(in: text, range: NSRange(location: 0, length: ns.length)).map {
+            ns.substring(with: $0.range).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
     }
 
     /// Разбирает пачку SMS.
