@@ -46,31 +46,35 @@ extension AppData {
         expenseTotal(onDay: day)
     }
 
-    /// Что переходит с воскресенья на понедельник: только дневная часть плана воскресенья
-    /// минус траты воскресенья (без накопленного за неделю). Перерасход воскресенья уменьшает понедельник.
+    /// Что переходит с прошлой недели: только дневная часть плана воскресенья минус траты воскресенья
+    /// (без накопленного за неделю). Делится на дни новой недели вместе с её планом.
     private func sundayCarry(intoWeekStarting monday: Date) -> Decimal {
         guard let sunday = Fmt.calendar.date(byAdding: .day, value: -1, to: monday),
               let base = dayPlan(sunday) else { return 0 }
         return base - spent(onDay: sunday)
     }
 
-    /// Сколько всего можно потратить в этот день: дневная часть плана + остаток прошлых дней недели.
-    /// Неистраченное прибавляется, перерасход вычитается (может стать отрицательным).
-    /// Неделя начинается заново с понедельника; на понедельник переходит только итог воскресенья.
+    /// Сколько всего можно потратить в этот день.
+    /// Деньги недели (план недели + итог воскресенья прошлой недели) минус траты прошлых дней этой недели
+    /// делятся поровну на оставшиеся дни, включая этот. Перерасход уменьшает лимит всех оставшихся дней,
+    /// экономия — увеличивает. Пример: 70 в неделю (10 в день), в понедельник потрачено 22 →
+    /// со вторника по воскресенье по (70 − 22) / 6 = 8.
     func dayAllowance(_ date: Date) -> Decimal? {
         let cal = Fmt.calendar
         let day = cal.startOfDay(for: date)
-        guard dayPlan(day) != nil else { return nil }
+        guard let week = weekPlan(containing: day) else { return nil }
         let monday = weekStart(day)
-        var current = monday
-        var allowance = (dayPlan(monday) ?? 0) + sundayCarry(intoWeekStarting: monday)
-        while current < day {
-            let leftover = allowance - spent(onDay: current)
-            guard let next = cal.date(byAdding: .day, value: 1, to: current) else { break }
-            current = next
-            allowance = (dayPlan(current) ?? 0) + leftover
-        }
-        return allowance
+        let pool = week + sundayCarry(intoWeekStarting: monday)
+        let spentBefore = expenseTotal(from: monday, to: day)
+        let dayIndex = cal.dateComponents([.day], from: monday, to: day).day ?? 0
+        let daysLeft = max(1, 7 - dayIndex)
+        return (pool - spentBefore) / Decimal(daysLeft)
+    }
+
+    /// Перерасход только за сегодня: траты сегодня сверх сегодняшнего лимита (лимит ниже нуля считается нулём).
+    func overspentToday(now: Date = Date()) -> Decimal {
+        guard let allowance = dayAllowance(now) else { return 0 }
+        return max(0, spent(onDay: now) - max(allowance, 0))
     }
 
     /// Сколько ещё можно потратить сегодня (отрицательное — перерасход).

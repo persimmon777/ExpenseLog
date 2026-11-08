@@ -37,7 +37,7 @@ struct TodayWidgetView: View {
             rectangular
         case .accessoryInline:
             if let canSpend = entry.canSpend {
-                Text(canSpend >= 0 ? "Можно: \(Fmt.money(canSpend))" : "Перерасход: \(Fmt.money(-canSpend))")
+                Text(entry.overspentToday > 0 ? "Перерасход: \(Fmt.money(entry.overspentToday))" : "Можно: \(Fmt.money(max(canSpend, 0)))")
             } else {
                 Text("Spent: \(Fmt.money(entry.total))")
             }
@@ -61,26 +61,25 @@ struct TodayWidgetView: View {
                     .lineLimit(5)
                     .minimumScaleFactor(0.8)
             } else if let canSpend = entry.canSpend, let plan = entry.dayPlan {
-                Text(canSpend >= 0 ? "Можно сегодня" : "Перерасход")
+                let over = entry.overspentToday > 0
+                Text(over ? "Перерасход сегодня" : "Можно сегодня")
                     .font(.caption)
-                    .foregroundStyle(canSpend >= 0 ? theme.inkSoft : theme.danger)
-                Text(Fmt.money(canSpend >= 0 ? canSpend : -canSpend))
+                    .foregroundStyle(over ? theme.danger : theme.inkSoft)
+                Text(Fmt.money(over ? entry.overspentToday : max(canSpend, 0)))
                     .font(theme.amountFont(.title2, weight: .bold))
-                    .foregroundStyle(canSpend >= 0 ? theme.ink : theme.danger)
+                    .foregroundStyle(over ? theme.danger : theme.ink)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
-                bar(ratio: ratio(entry.total, plan), color: entry.total > plan ? theme.danger : theme.accent)
-                Text("потрачено \(Fmt.money(entry.total)) из \(Fmt.money(plan))")
+                bar(ratio: ratio(entry.total, max(plan, 0)), color: entry.overspentToday > 0 ? theme.danger : theme.accent)
+                Text("потрачено \(Fmt.money(entry.total)) из \(Fmt.money(max(plan, 0)))")
                     .font(.caption2)
                     .foregroundStyle(theme.inkSoft)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
-                if entry.carried != 0 {
-                    Text(entry.carried > 0
-                         ? "+\(Fmt.money(entry.carried)) с прошлых дней"
-                         : "−\(Fmt.money(-entry.carried)) за прошлые дни")
+                if entry.carried > 0 {
+                    Text("+\(Fmt.money(entry.carried)) с прошлых дней")
                         .font(.caption2)
-                        .foregroundStyle(entry.carried > 0 ? theme.positive : theme.danger)
+                        .foregroundStyle(theme.positive)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                 }
@@ -151,7 +150,7 @@ struct TodayWidgetView: View {
     private var rectangular: some View {
         VStack(alignment: .leading, spacing: 2) {
             if let canSpend = entry.canSpend, let plan = entry.dayPlan {
-                Text(canSpend >= 0 ? "Можно: \(Fmt.money(canSpend))" : "Перерасход: \(Fmt.money(-canSpend))")
+                Text(entry.overspentToday > 0 ? "Перерасход: \(Fmt.money(entry.overspentToday))" : "Можно: \(Fmt.money(max(canSpend, 0)))")
                     .font(.headline)
                     .widgetAccentable()
                     .lineLimit(1)
@@ -159,7 +158,7 @@ struct TodayWidgetView: View {
                 Text("потрачено \(Fmt.money(entry.total))")
                     .font(.caption)
                     .lineLimit(1)
-                ProgressView(value: min(ratio(entry.total, plan), 1))
+                ProgressView(value: min(ratio(entry.total, max(plan, 0)), 1))
                     .tint(.primary)
             } else {
                 Text("Сегодня: \(Fmt.money(entry.total))")

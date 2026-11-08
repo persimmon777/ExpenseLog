@@ -169,6 +169,21 @@ struct ShoppingItem: Identifiable, Codable, Hashable {
     var matchedTransactionID: UUID?
 }
 
+// MARK: - Группы магазинов
+
+/// Группа магазинов: все места, в названии которых есть `pattern` (например, «SOSEDI» —
+/// «SOSEDI 4/3/4», «SOSEDI 12»…), показываются одним названием и сами относятся к категории.
+struct MerchantGroup: Identifiable, Codable, Hashable {
+    var id: UUID = UUID()
+    /// Своё название группы: «Соседи».
+    var name: String
+    /// Ключ (`Merchant.key`) того, что должно быть в названии из SMS: «SOSEDI».
+    var pattern: String
+    /// Как пользователь ввёл текст для поиска (для показа).
+    var patternText: String
+    var categoryID: UUID?
+}
+
 // MARK: - Регулярные платежи и поступления
 
 /// Регулярный платёж (подписка, связь, аренда) или поступление (зарплата, стипендия).
@@ -246,6 +261,8 @@ struct AppData: Codable {
     var weeklyPlanOverrides: [String: Decimal] = [:]
     /// Регулярные платежи и поступления.
     var recurring: [RecurringItem] = []
+    /// Группы магазинов («SOSEDI…» → «Соседи»).
+    var merchantGroups: [MerchantGroup] = []
 
     init() {}
 
@@ -255,7 +272,7 @@ struct AppData: Codable {
         case schemaVersion, transactions, categories, rules, debts
         case deletedFingerprints, limitAlertsSent, lastBalance, lastBalanceDate
         case balanceSetManually, merchantNames, shoppingList
-        case weeklyPlanBase, weeklyPlanOverrides, recurring
+        case weeklyPlanBase, weeklyPlanOverrides, recurring, merchantGroups
     }
 
     init(from decoder: Decoder) throws {
@@ -275,6 +292,7 @@ struct AppData: Codable {
         weeklyPlanBase = try c.decodeIfPresent([WeeklyPlanEntry].self, forKey: .weeklyPlanBase) ?? []
         weeklyPlanOverrides = try c.decodeIfPresent([String: Decimal].self, forKey: .weeklyPlanOverrides) ?? [:]
         recurring = try c.decodeIfPresent([RecurringItem].self, forKey: .recurring) ?? []
+        merchantGroups = try c.decodeIfPresent([MerchantGroup].self, forKey: .merchantGroups) ?? []
         schemaVersion = AppData.currentSchemaVersion
     }
 
@@ -353,8 +371,8 @@ struct AppData: Codable {
                 smsType: sms.type,
                 smsFingerprint: sms.fingerprint
             )
-            if tx.kind == .expense, let matched = rule(forMerchant: tx.merchant) {
-                tx.categoryID = matched.categoryID
+            if tx.kind == .expense, let category = autoCategory(forMerchant: tx.merchant) {
+                tx.categoryID = category
             }
             transactions.append(tx)
             result.matched.append(contentsOf: autoMatch(transactionAt: transactions.count - 1))

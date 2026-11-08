@@ -150,6 +150,8 @@ struct MerchantSummary: Identifiable {
     let total: Decimal
     let lastDate: Date
     let ruleCategoryID: UUID?
+    /// Строка — это группа магазинов («Соседи»), а не один магазин.
+    var groupID: UUID? = nil
 
     var id: String { key }
     var name: String { customName ?? originalName }
@@ -161,6 +163,7 @@ extension AppData {
     func merchantName(_ merchant: String) -> String {
         let key = Merchant.key(merchant)
         if !key.isEmpty, let custom = merchantNames[key] { return custom }
+        if let group = group(forMerchant: merchant) { return group.name }
         return Merchant.shortName(merchant)
     }
 
@@ -198,11 +201,24 @@ extension AppData {
     /// Все магазины, где были траты, — последние сверху.
     func merchants() -> [MerchantSummary] {
         let purchases = transactions.filter { $0.placeSubtitle == nil && $0.kind != .income && $0.kind != .debtReturn }
-        let grouped = Dictionary(grouping: purchases) { (tx: Transaction) in Merchant.key(tx.merchant) }
+        // Филиалы одной группы — одной строкой («group:<id>»).
+        let grouped = Dictionary(grouping: purchases) { (tx: Transaction) -> String in
+            if let group = group(forMerchant: tx.merchant) { return "group:\(group.id.uuidString)" }
+            return Merchant.key(tx.merchant)
+        }
         var result: [MerchantSummary] = []
         for (key, items) in grouped where !key.isEmpty {
             let sorted = items.sorted { (a: Transaction, b: Transaction) in a.date > b.date }
             guard let latest = sorted.first else { continue }
+            if key.hasPrefix("group:"), let group = self.group(forMerchant: latest.merchant) {
+                let total = items.filter { $0.countsAsExpense }.reduce(Decimal(0)) { $0 + $1.amount }
+                result.append(MerchantSummary(
+                    key: key, originalName: group.patternText, customName: group.name,
+                    count: items.count, total: total, lastDate: latest.date,
+                    ruleCategoryID: group.categoryID, groupID: group.id
+                ))
+                continue
+            }
             let total = items.filter { $0.countsAsExpense }.reduce(Decimal(0)) { $0 + $1.amount }
             result.append(MerchantSummary(
                 key: key,
