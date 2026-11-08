@@ -36,7 +36,11 @@ struct TodayWidgetView: View {
         case .accessoryRectangular:
             rectangular
         case .accessoryInline:
-            Text("Spent: \(Fmt.money(entry.total))")
+            if let canSpend = entry.canSpend {
+                Text(canSpend >= 0 ? "Можно: \(Fmt.money(canSpend))" : "Перерасход: \(Fmt.money(-canSpend))")
+            } else {
+                Text("Spent: \(Fmt.money(entry.total))")
+            }
         default:
             todayColumn
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -47,24 +51,42 @@ struct TodayWidgetView: View {
 
     private var todayColumn: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Сегодня")
-                .font(.caption)
-                .foregroundStyle(theme.inkSoft)
-            Text(Fmt.money(entry.total))
-                .font(theme.amountFont(.title2, weight: .bold))
-                .foregroundStyle(theme.ink)
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-            if let plan = entry.dayPlan, plan > 0 {
+            if let canSpend = entry.canSpend, let plan = entry.dayPlan {
+                Text(canSpend >= 0 ? "Можно сегодня" : "Перерасход")
+                    .font(.caption)
+                    .foregroundStyle(canSpend >= 0 ? theme.inkSoft : theme.danger)
+                Text(Fmt.money(canSpend >= 0 ? canSpend : -canSpend))
+                    .font(theme.amountFont(.title2, weight: .bold))
+                    .foregroundStyle(canSpend >= 0 ? theme.ink : theme.danger)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
                 bar(ratio: ratio(entry.total, plan), color: entry.total > plan ? theme.danger : theme.accent)
-                Text("из \(Fmt.money(plan))")
+                Text("потрачено \(Fmt.money(entry.total)) из \(Fmt.money(plan))")
                     .font(.caption2)
                     .foregroundStyle(theme.inkSoft)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                if entry.carried > 0 {
+                    Text("+\(Fmt.money(entry.carried)) с прошлых дней")
+                        .font(.caption2)
+                        .foregroundStyle(theme.positive)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
+            } else {
+                Text("Сегодня")
+                    .font(.caption)
+                    .foregroundStyle(theme.inkSoft)
+                Text(Fmt.money(entry.total))
+                    .font(theme.amountFont(.title2, weight: .bold))
+                    .foregroundStyle(theme.ink)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                Text("Задайте план в Spent — покажу, сколько можно")
+                    .font(.caption2)
+                    .foregroundStyle(theme.inkSoft)
+                    .lineLimit(2)
             }
-            Text(Fmt.plural(entry.count, "покупка", "покупки", "покупок"))
-                .font(.caption2)
-                .foregroundStyle(theme.inkSoft)
             Spacer(minLength: 0)
             if let title = entry.lastTitle, let amount = entry.lastAmount {
                 VStack(alignment: .leading, spacing: 1) {
@@ -117,16 +139,25 @@ struct TodayWidgetView: View {
 
     private var rectangular: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("Сегодня: \(Fmt.money(entry.total))")
-                .font(.headline)
-                .widgetAccentable()
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-            Text(Fmt.plural(entry.count, "покупка", "покупки", "покупок"))
-                .font(.caption)
-            if let plan = entry.dayPlan, plan > 0 {
+            if let canSpend = entry.canSpend, let plan = entry.dayPlan {
+                Text(canSpend >= 0 ? "Можно: \(Fmt.money(canSpend))" : "Перерасход: \(Fmt.money(-canSpend))")
+                    .font(.headline)
+                    .widgetAccentable()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                Text("потрачено \(Fmt.money(entry.total))")
+                    .font(.caption)
+                    .lineLimit(1)
                 ProgressView(value: min(ratio(entry.total, plan), 1))
                     .tint(.primary)
+            } else {
+                Text("Сегодня: \(Fmt.money(entry.total))")
+                    .font(.headline)
+                    .widgetAccentable()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                Text(Fmt.plural(entry.count, "покупка", "покупки", "покупок"))
+                    .font(.caption)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

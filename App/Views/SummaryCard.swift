@@ -34,7 +34,7 @@ struct ReceiptSummary: View {
                 AmountRow(title: "Сегодня", value: Fmt.money(data.expenseTotal(in: .day)), emphasized: true)
                 if let status = data.planStatus(.day) {
                     LimitBar(status: status)
-                    Text(planLine(status, unit: "в день"))
+                    Text(todayLine(status, carried: data.carriedIntoToday()))
                         .font(.caption2)
                         .foregroundStyle(status.level == .over ? theme.danger : theme.inkSoft)
                 }
@@ -68,6 +68,15 @@ struct ReceiptSummary: View {
     private func planValue(_ status: LimitStatus?, spent: Decimal) -> String {
         guard let status else { return Fmt.money(spent) }
         return "\(Fmt.money(status.spent)) из \(Fmt.money(status.limit))"
+    }
+
+    /// «Можно сегодня ещё 7,60 из 25,00 BYN (+5,00 с прошлых дней)».
+    private func todayLine(_ status: LimitStatus, carried: Decimal) -> String {
+        let extra = carried > 0 ? " (+\(Fmt.money(carried)) с прошлых дней)" : ""
+        if status.spent > status.limit {
+            return "Перерасход \(Fmt.money(status.spent - status.limit)) · на сегодня было \(Fmt.money(status.limit))\(extra)"
+        }
+        return "Можно ещё \(Fmt.money(status.limit - status.spent)) из \(Fmt.money(status.limit))\(extra)"
     }
 
     /// «План 20,00 BYN в день · осталось 7,60 BYN».

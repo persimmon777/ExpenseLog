@@ -164,6 +164,37 @@ struct ShoppingItem: Identifiable, Codable, Hashable {
     var createdAt: Date = Date()
 }
 
+// MARK: - Регулярные платежи и поступления
+
+/// Регулярный платёж (подписка, связь, аренда) или поступление (зарплата, стипендия).
+struct RecurringItem: Identifiable, Codable, Hashable {
+    enum Period: String, Codable, CaseIterable, Identifiable {
+        case weekly, monthly, yearly
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .weekly: return "Каждую неделю"
+            case .monthly: return "Каждый месяц"
+            case .yearly: return "Каждый год"
+            }
+        }
+    }
+
+    var id: UUID = UUID()
+    var title: String
+    var amount: Decimal
+    var currency: String = "BYN"
+    /// `true` — поступление, `false` — платёж.
+    var isIncome: Bool = false
+    /// Категория платежа (для подсказки и иконки).
+    var categoryID: UUID?
+    var period: Period = .monthly
+    /// Первая (опорная) дата: по ней берутся день недели / число / день года.
+    var anchor: Date
+    var isActive: Bool = true
+    var note: String?
+}
+
 // MARK: - План трат на неделю
 
 /// План по умолчанию, действующий с недели `from` (понедельник) и дальше.
@@ -200,6 +231,8 @@ struct AppData: Codable {
     var weeklyPlanBase: [WeeklyPlanEntry] = []
     /// План, заданный вручную для конкретных недель: «yyyy-MM-dd» понедельника → сумма.
     var weeklyPlanOverrides: [String: Decimal] = [:]
+    /// Регулярные платежи и поступления.
+    var recurring: [RecurringItem] = []
 
     init() {}
 
@@ -209,7 +242,7 @@ struct AppData: Codable {
         case schemaVersion, transactions, categories, rules, debts
         case deletedFingerprints, limitAlertsSent, lastBalance, lastBalanceDate
         case balanceSetManually, merchantNames, shoppingList
-        case weeklyPlanBase, weeklyPlanOverrides
+        case weeklyPlanBase, weeklyPlanOverrides, recurring
     }
 
     init(from decoder: Decoder) throws {
@@ -228,6 +261,7 @@ struct AppData: Codable {
         shoppingList = try c.decodeIfPresent([ShoppingItem].self, forKey: .shoppingList) ?? []
         weeklyPlanBase = try c.decodeIfPresent([WeeklyPlanEntry].self, forKey: .weeklyPlanBase) ?? []
         weeklyPlanOverrides = try c.decodeIfPresent([String: Decimal].self, forKey: .weeklyPlanOverrides) ?? [:]
+        recurring = try c.decodeIfPresent([RecurringItem].self, forKey: .recurring) ?? []
         schemaVersion = AppData.currentSchemaVersion
     }
 
