@@ -5,7 +5,7 @@ import WidgetKit
 /// Работает без открытия приложения. SMS, которые не являются операцией, молча пропускаются.
 struct AddBankSMSIntent: AppIntent {
     static var title: LocalizedStringResource = "Добавить SMS банка"
-    static var description = IntentDescription("Разбирает SMS о списании, пополнении или снятии наличных и добавляет операцию в Spent.")
+    static var description = IntentDescription("Разбирает SMS о списании, пополнении или снятии наличных и добавляет операцию в Монетку.")
     static var openAppWhenRun = false
 
     /// Необязательный: если в автоматизации поле не связано с «Ввод быстрой команды → Содержимое»,
@@ -14,7 +14,7 @@ struct AddBankSMSIntent: AppIntent {
     var text: String?
 
     static var parameterSummary: some ParameterSummary {
-        Summary("Добавить в Spent: \(\.$text)")
+        Summary("Добавить в Монетку: \(\.$text)")
     }
 
     func perform() async throws -> some IntentResult & ReturnsValue<String> {

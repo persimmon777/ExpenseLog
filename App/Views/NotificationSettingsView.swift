@@ -19,7 +19,7 @@ struct NotificationSettingsView: View {
         Form {
             if !authorized {
                 Section {
-                    Text("Уведомления для Spent выключены в настройках iPhone. Включите их, иначе напоминания не придут.")
+                    Text("Уведомления для Монетки выключены в настройках iPhone. Включите их, иначе напоминания не придут.")
                         .foregroundStyle(theme.danger)
                     Button("Открыть настройки iPhone") {
                         if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }

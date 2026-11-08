@@ -53,7 +53,7 @@ struct BalanceWidgetView: View {
                     Text("Нет доступа к данным")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(theme.danger)
-                    Text("Откройте Spent → Настройки → «Общая папка».")
+                    Text("Откройте Монетку → Настройки → «Общая папка».")
                         .font(.caption2)
                         .foregroundStyle(theme.inkSoft)
                 }

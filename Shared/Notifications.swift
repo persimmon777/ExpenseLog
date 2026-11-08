@@ -188,7 +188,7 @@ enum Notifier {
 
     private static func add(id: String, body: String, trigger: UNNotificationTrigger) async {
         let content = UNMutableNotificationContent()
-        content.title = "Spent"
+        content.title = "Монетка"
         content.body = body
         content.sound = .default
         try? await center.add(UNNotificationRequest(identifier: id, content: content, trigger: trigger))
