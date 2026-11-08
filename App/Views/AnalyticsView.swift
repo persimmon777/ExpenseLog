@@ -12,6 +12,9 @@ struct AnalyticsView: View {
     @State private var selectedDate = Date()
     @State private var displayedMonth = Date()
     @State private var toast: String?
+    /// Вид графика: по категориям (полоски) или динамика (линия).
+    @State private var showTrend = false
+    @State private var trendGranularity: TrendGranularity = .day
 
     var body: some View {
         let data = store.data
@@ -55,9 +58,7 @@ struct AnalyticsView: View {
 
                     totalCard(summary)
 
-                    if !summary.categories.isEmpty {
-                        categoriesCard(summary)
-                    }
+                    chartCard(summary, data: data)
 
                     otherCard(summary, data: data)
                 }
@@ -109,6 +110,12 @@ struct AnalyticsView: View {
                 Text(Fmt.plural(s.count, "покупка", "покупки", "покупок"))
                     .font(.subheadline)
                     .foregroundStyle(theme.inkSoft)
+                if let status = s.planStatus, let plan = s.plan {
+                    LimitBar(status: status)
+                    Text(planCaption(spent: s.total, plan: plan))
+                        .font(.caption)
+                        .foregroundStyle(status.level == .over ? theme.danger : theme.inkSoft)
+                }
                 if let comparison = s.comparisonText {
                     Text(comparison)
                         .font(.subheadline.weight(.semibold))
@@ -118,11 +125,61 @@ struct AnalyticsView: View {
         }
     }
 
-    private func categoriesCard(_ s: PeriodSummary) -> some View {
+    /// Гистограмма по категориям или линейный график — переключатель в заголовке.
+    private func chartCard(_ s: PeriodSummary, data: AppData) -> some View {
         PaperCard {
             VStack(alignment: .leading, spacing: 12) {
-                Text("По категориям")
-                    .font(.headline)
+                HStack {
+                    Text(showTrend ? "Динамика трат" : "По категориям")
+                        .font(.headline)
+                    Spacer()
+                    Button {
+                        withAnimation { showTrend.toggle() }
+                    } label: {
+                        Image(systemName: showTrend ? "chart.bar.xaxis" : "chart.xyaxis.line")
+                            .font(.title3)
+                            .foregroundStyle(theme.accent)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(showTrend ? "Показать по категориям" : "Показать динамику")
+                }
+                if showTrend {
+                    Picker("Шаг", selection: $trendGranularity) {
+                        ForEach(TrendGranularity.allCases) { g in
+                            Text(g.title).tag(g)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    TrendChart(points: data.trend(trendGranularity, endingAt: selectedDate), granularity: trendGranularity)
+                    Text(trendCaption)
+                        .font(.caption)
+                        .foregroundStyle(theme.inkSoft)
+                } else if s.categories.isEmpty {
+                    Text("За этот период трат нет.")
+                        .font(.subheadline)
+                        .foregroundStyle(theme.inkSoft)
+                } else {
+                    categoriesContent(s)
+                }
+            }
+        }
+    }
+
+    private var trendCaption: String {
+        switch trendGranularity {
+        case .day: return "Траты за каждый день месяца. Пунктир — план на день."
+        case .week: return "Траты за последние 12 недель. Пунктир — план на неделю."
+        case .month: return "Траты за последние 12 месяцев. Пунктир — план на месяц."
+        }
+    }
+
+    private func planCaption(spent: Decimal, plan: Decimal) -> String {
+        if spent > plan { return "План \(Fmt.money(plan)) · перерасход \(Fmt.money(spent - plan))" }
+        return "План \(Fmt.money(plan)) · осталось \(Fmt.money(plan - spent))"
+    }
+
+    private func categoriesContent(_ s: PeriodSummary) -> some View {
+            VStack(alignment: .leading, spacing: 12) {
                 CategoryChart(summary: s)
                 RuleLine()
                 ForEach(s.categories) { item in
@@ -137,10 +194,10 @@ struct AnalyticsView: View {
                             Text(Fmt.money(item.total))
                                 .font(theme.amountFont(.subheadline))
                                 .foregroundStyle(theme.ink)
-                            Text("\(s.percent(of: item.total))%")
+                            Text(s.percentText(of: item.total))
                                 .font(.caption)
                                 .foregroundStyle(theme.inkSoft)
-                                .frame(width: 38, alignment: .trailing)
+                                .frame(width: 48, alignment: .trailing)
                             Image(systemName: "chevron.right")
                                 .font(.caption)
                                 .foregroundStyle(theme.inkSoft)
@@ -150,7 +207,6 @@ struct AnalyticsView: View {
                     .buttonStyle(.plain)
                 }
             }
-        }
     }
 
     /// Не смешиваем с расходами: пополнения, переводы, долги.

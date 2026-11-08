@@ -164,6 +164,16 @@ struct ShoppingItem: Identifiable, Codable, Hashable {
     var createdAt: Date = Date()
 }
 
+// MARK: - План трат на неделю
+
+/// План по умолчанию, действующий с недели `from` (понедельник) и дальше.
+/// Новая запись при изменении плана — так прошедшие недели не меняются.
+struct WeeklyPlanEntry: Codable, Hashable {
+    var from: Date
+    /// `nil` — без плана с этой недели.
+    var amount: Decimal?
+}
+
 // MARK: - Все данные приложения
 
 struct AppData: Codable {
@@ -186,6 +196,10 @@ struct AppData: Codable {
     var merchantNames: [String: String] = [:]
     /// Список покупок (планируемые траты).
     var shoppingList: [ShoppingItem] = []
+    /// История плана на неделю по умолчанию.
+    var weeklyPlanBase: [WeeklyPlanEntry] = []
+    /// План, заданный вручную для конкретных недель: «yyyy-MM-dd» понедельника → сумма.
+    var weeklyPlanOverrides: [String: Decimal] = [:]
 
     init() {}
 
@@ -195,6 +209,7 @@ struct AppData: Codable {
         case schemaVersion, transactions, categories, rules, debts
         case deletedFingerprints, limitAlertsSent, lastBalance, lastBalanceDate
         case balanceSetManually, merchantNames, shoppingList
+        case weeklyPlanBase, weeklyPlanOverrides
     }
 
     init(from decoder: Decoder) throws {
@@ -211,6 +226,8 @@ struct AppData: Codable {
         balanceSetManually = try c.decodeIfPresent(Bool.self, forKey: .balanceSetManually) ?? false
         merchantNames = try c.decodeIfPresent([String: String].self, forKey: .merchantNames) ?? [:]
         shoppingList = try c.decodeIfPresent([ShoppingItem].self, forKey: .shoppingList) ?? []
+        weeklyPlanBase = try c.decodeIfPresent([WeeklyPlanEntry].self, forKey: .weeklyPlanBase) ?? []
+        weeklyPlanOverrides = try c.decodeIfPresent([String: Decimal].self, forKey: .weeklyPlanOverrides) ?? [:]
         schemaVersion = AppData.currentSchemaVersion
     }
 

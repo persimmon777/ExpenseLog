@@ -16,7 +16,7 @@ struct CategoryChart: View {
             .foregroundStyle(color(item))
             .cornerRadius(4)
             .annotation(position: .trailing, alignment: .leading) {
-                Text("\(summary.percent(of: item.total))%")
+                Text(summary.percentText(of: item.total))
                     .font(.caption2)
                     .foregroundStyle(theme.inkSoft)
             }

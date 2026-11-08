@@ -71,6 +71,28 @@ enum Fmt {
     /// «20:41».
     static func time(_ date: Date) -> String { timeFormatter.string(from: date) }
 
+    private static let keyFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.calendar = calendar
+        f.timeZone = .current
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    /// Ключ дня для хранения: «2026-11-02».
+    static func dayKey(_ date: Date) -> String { keyFormatter.string(from: date) }
+
+    /// «45,3%» — проценты с одним знаком после запятой.
+    static func percent(_ value: Double) -> String {
+        let f = NumberFormatter()
+        f.locale = locale
+        f.numberStyle = .decimal
+        f.minimumFractionDigits = 1
+        f.maximumFractionDigits = 1
+        return (f.string(from: NSNumber(value: value)) ?? String(format: "%.1f", value)) + "%"
+    }
+
     /// Русское склонение: plural(3, "операция", "операции", "операций") → «3 операции».
     static func plural(_ n: Int, _ one: String, _ few: String, _ many: String) -> String {
         let n10 = n % 10, n100 = n % 100

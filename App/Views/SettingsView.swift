@@ -22,6 +22,11 @@ struct SettingsView: View {
                         LabeledContent("Оформление", value: "\(themeID.title) · \(palette.name)")
                     }
                     NavigationLink {
+                        WeeklyPlanView()
+                    } label: {
+                        LabeledContent("План трат", value: store.data.currentBasePlan.map { "\(Fmt.money($0)) в неделю" } ?? "не задан")
+                    }
+                    NavigationLink {
                         AutomationGuideView()
                     } label: {
                         LabeledContent("Автодобавление из SMS", value: SharedSettings.lastAutoAdd == nil ? "не настроено" : "работает")

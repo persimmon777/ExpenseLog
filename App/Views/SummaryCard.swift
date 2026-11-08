@@ -32,8 +32,15 @@ struct ReceiptSummary: View {
                     .font(.caption)
                     .foregroundStyle(theme.inkSoft)
                 AmountRow(title: "Сегодня", value: Fmt.money(data.expenseTotal(in: .day)), emphasized: true)
+                if let status = data.planStatus(.day) {
+                    LimitBar(status: status)
+                    Text(planLine(status, unit: "в день"))
+                        .font(.caption2)
+                        .foregroundStyle(status.level == .over ? theme.danger : theme.inkSoft)
+                }
                 RuleLine()
-                AmountRow(title: "За месяц", value: Fmt.money(data.expenseTotal(in: .month)))
+                AmountRow(title: "Неделя", value: planValue(data.planStatus(.week), spent: data.expenseTotal(in: .weekOfYear)))
+                AmountRow(title: "За месяц", value: planValue(data.planStatus(.month), spent: data.expenseTotal(in: .month)))
                 AmountRow(title: "Прогноз на месяц", value: Fmt.money(data.monthForecast()))
                 Button(action: onPlannedTap) {
                     AmountRow(title: "Планируется", value: Fmt.money(data.plannedTotal))
@@ -55,6 +62,19 @@ struct ReceiptSummary: View {
                 .buttonStyle(.plain)
             }
         }
+    }
+
+    /// «64,00 из 140,00 BYN» или просто сумма, если плана нет.
+    private func planValue(_ status: LimitStatus?, spent: Decimal) -> String {
+        guard let status else { return Fmt.money(spent) }
+        return "\(Fmt.money(status.spent)) из \(Fmt.money(status.limit))"
+    }
+
+    /// «План 20,00 BYN в день · осталось 7,60 BYN».
+    private func planLine(_ status: LimitStatus, unit: String) -> String {
+        let base = "План \(Fmt.money(status.limit)) \(unit)"
+        if status.spent > status.limit { return base + " · перерасход \(Fmt.money(status.spent - status.limit))" }
+        return base + " · осталось \(Fmt.money(status.limit - status.spent))"
     }
 
     /// «из SMS, сегодня в 20:41» / «указан вручную, вчера в 09:10».
