@@ -19,6 +19,7 @@
   - максимум 3 приложения одновременно (SideStore + Spent уже 2), 10 App ID за 7 дней: приложение и виджет занимают 2;
   - **нет iCloud/CloudKit, push-уведомлений (APNs), Face ID-entitlement-ов** — только то, что работает без платного аккаунта;
   - SideStore при переподписи меняет идентификатор App Group (дописывает ID команды) и кладёт настоящий в Info.plist под ключом `ALTAppGroups`. Это уже учтено в `AppGroup` (`Shared/DataFile.swift`) — **не хардкодить группу напрямую**.
+  - `AppGroup.candidates()` пробует: `ALTAppGroups` из Info.plist (своего и основного приложения), группы из профиля подписи `embedded.mobileprovision` (Entitlements → `com.apple.security.application-groups`), затем `group.com.saevich.spent`. Если группа не найдена — данные пишутся в Documents приложения; когда группа появится, `AppGroup.migrateLocalDataIfNeeded()` (в `SpentStore.init`) переносит файл и настройки. Экран «Настройки → Общая папка» (`DiagnosticsView`) показывает `AppGroup.diagnostics` — у владельца на телефоне группа сначала **не находилась** (виджет «Нет доступа к данным»), разбираемся по диагностике.
 - Проект описывается **только через XcodeGen** (`project.yml`). `.xcodeproj` в репозиторий не коммитим (он в `.gitignore`).
 
 ---

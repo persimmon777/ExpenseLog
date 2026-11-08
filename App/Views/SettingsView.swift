@@ -58,7 +58,11 @@ struct SettingsView: View {
                     }
                 }
                 Section("Состояние") {
-                    LabeledContent("Общая папка", value: AppGroup.isShared ? "работает" : "не найдена")
+                    NavigationLink {
+                        DiagnosticsView()
+                    } label: {
+                        LabeledContent("Общая папка", value: AppGroup.isShared ? "работает" : "не найдена")
+                    }
                     LabeledContent("Операций", value: "\(store.data.transactions.count)")
                     LabeledContent("Категорий", value: "\(store.data.categories.count)")
                     LabeledContent("Правил", value: "\(store.data.rules.count)")
