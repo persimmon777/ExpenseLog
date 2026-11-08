@@ -21,14 +21,15 @@ struct TodayProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<TodayEntry>) -> Void) {
         let entry = makeEntry()
         // Обновиться в полночь, чтобы сумма сбросилась на ноль.
-        let midnight = Calendar.current.startOfDay(for: Date()).addingTimeInterval(24 * 60 * 60 + 1)
+        let tomorrow = Fmt.calendar.date(byAdding: .day, value: 1, to: Date()) ?? Date().addingTimeInterval(86_400)
+        let midnight = Fmt.calendar.startOfDay(for: tomorrow)
         completion(Timeline(entries: [entry], policy: .after(midnight)))
     }
 
     private func makeEntry() -> TodayEntry {
         let data = DataFile.load()
         let today = data.transactions.filter {
-            $0.kind.countsAsExpense && Calendar.current.isDateInToday($0.date)
+            $0.kind.countsAsExpense && Fmt.calendar.isDateInToday($0.date)
         }
         let total = today.reduce(Decimal(0)) { $0 + $1.amount }
         return TodayEntry(date: Date(), total: total, count: today.count)
@@ -37,17 +38,20 @@ struct TodayProvider: TimelineProvider {
 
 struct TodayWidgetView: View {
     let entry: TodayEntry
+    private let theme = Theme.current
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Сегодня").font(.caption).foregroundStyle(.secondary)
-            Text("\(NSDecimalNumber(decimal: entry.total).stringValue) BYN")
-                .font(.system(.title2, design: .monospaced).weight(.bold))
+            Text("Сегодня").font(.caption).foregroundStyle(theme.inkSoft)
+            Text(Fmt.money(entry.total))
+                .font(theme.amountFont(.title2, weight: .bold))
+                .foregroundStyle(theme.ink)
+                .lineLimit(1)
                 .minimumScaleFactor(0.5)
-            Text("покупок: \(entry.count)").font(.caption2).foregroundStyle(.secondary)
+            Text("покупок: \(entry.count)").font(.caption2).foregroundStyle(theme.inkSoft)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .containerBackground(for: .widget) { Color(.systemBackground) }
+        .containerBackground(for: .widget) { theme.paper }
     }
 }
 
