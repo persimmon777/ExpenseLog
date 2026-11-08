@@ -28,8 +28,9 @@ struct AddBankSMSIntent: AppIntent {
         DataFile.update { data in
             result = data.ingest(smsText: input)
         }
-        // Дальше по CLAUDE.md: лимиты → еженедельная сводка → резервная копия (появится на своём шаге) → виджет.
+        // Дальше по CLAUDE.md: лимиты → еженедельная сводка → резервная копия → виджет.
         await Notifier.refresh()
+        if !result.added.isEmpty { Backup.runIfNeeded() }
         WidgetCenter.shared.reloadAllTimelines()
         let summary = result.summary
         SharedSettings.recordAutoAdd(summary)
