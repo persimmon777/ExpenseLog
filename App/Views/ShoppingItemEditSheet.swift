@@ -9,20 +9,31 @@ struct ShoppingItemEditSheet: View {
     private let item: ShoppingItem
     @State private var title: String
     @State private var priceText: String
+    @State private var merchant: String
 
     init(item: ShoppingItem) {
         self.item = item
         _title = State(initialValue: item.title)
         _priceText = State(initialValue: item.price.map { NSDecimalNumber(decimal: $0).stringValue.replacingOccurrences(of: ".", with: ",") } ?? "")
+        _merchant = State(initialValue: item.merchantName ?? "")
     }
 
     var body: some View {
         NavigationStack {
             Form {
-                TextField("Что купить", text: $title)
-                TextField("Примерная цена, BYN", text: $priceText)
-                    .keyboardType(.decimalPad)
-                    .font(theme.amountFont(.body))
+                Section {
+                    TextField("Что купить", text: $title)
+                    TextField("Примерная цена, BYN", text: $priceText)
+                        .keyboardType(.decimalPad)
+                        .font(theme.amountFont(.body))
+                }
+                Section {
+                    MerchantField(name: $merchant)
+                } header: {
+                    Text("Отметить само")
+                } footer: {
+                    Text("Укажите магазин — когда придёт оплата в нём на сумму около цены (±20%), пункт сам отметится купленным.")
+                }
             }
             .themedBackground(theme)
             .navigationTitle("Пункт списка")
@@ -36,6 +47,9 @@ struct ShoppingItemEditSheet: View {
                         var updated = item
                         updated.title = title.trimmingCharacters(in: .whitespaces)
                         updated.price = SMSParser.decimal(priceText.replacingOccurrences(of: " ", with: ""))
+                        let trimmed = merchant.trimmingCharacters(in: .whitespaces)
+                        updated.merchantKey = trimmed.merchantKeyOrNil
+                        updated.merchantName = updated.merchantKey == nil ? nil : trimmed
                         store.mutate { $0.updateShoppingItem(updated) }
                         dismiss()
                     }
@@ -43,6 +57,6 @@ struct ShoppingItemEditSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large])
     }
 }

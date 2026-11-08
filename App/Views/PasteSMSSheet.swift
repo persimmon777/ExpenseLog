@@ -127,6 +127,7 @@ struct PasteSMSSheet: View {
         var parts = ["Добавлено \(r.added.count)"]
         if r.duplicates > 0 { parts.append("дублей \(r.duplicates)") }
         if r.previouslyDeleted > 0 { parts.append("ранее удалено \(r.previouslyDeleted)") }
+        if !r.matched.isEmpty { parts.append("отмечено само: " + r.matched.joined(separator: "; ")) }
         resultText = parts.joined(separator: ", ")
     }
 }

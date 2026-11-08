@@ -15,6 +15,7 @@ struct RecurringEditSheet: View {
     @State private var anchor: Date
     @State private var categoryID: UUID?
     @State private var isActive: Bool
+    @State private var merchant: String
     @State private var confirmDelete = false
 
     init(item: RecurringItem?) {
@@ -26,6 +27,7 @@ struct RecurringEditSheet: View {
         _anchor = State(initialValue: item.map { $0.nextDate(onOrAfter: Date()) } ?? Date())
         _categoryID = State(initialValue: item?.categoryID)
         _isActive = State(initialValue: item?.isActive ?? true)
+        _merchant = State(initialValue: item?.merchantName ?? "")
     }
 
     private var amount: Decimal? {
@@ -67,6 +69,15 @@ struct RecurringEditSheet: View {
                     Text(isIncome
                          ? "В день поступления в 10:00 придёт напоминание."
                          : "Накануне списания в 19:00 придёт напоминание. Сама трата появится, когда придёт SMS банка.")
+                }
+                if !isIncome {
+                    Section {
+                        MerchantField(name: $merchant)
+                    } header: {
+                        Text("Отметить оплату само")
+                    } footer: {
+                        Text("Когда придёт оплата в этом магазине на сумму ±20%, платёж отметится оплаченным: напоминание не придёт, трате проставится категория.")
+                    }
                 }
                 if original != nil {
                     Section {
@@ -110,6 +121,9 @@ struct RecurringEditSheet: View {
         item.anchor = anchor
         item.categoryID = isIncome ? nil : categoryID
         item.isActive = isActive
+        let shop = merchant.trimmingCharacters(in: .whitespaces)
+        item.merchantKey = isIncome ? nil : shop.merchantKeyOrNil
+        item.merchantName = item.merchantKey == nil ? nil : shop
         let saved = item
         store.mutate { $0.saveRecurring(saved) }
         dismiss()

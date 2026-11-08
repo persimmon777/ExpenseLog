@@ -66,10 +66,12 @@ struct TodayWidgetView: View {
                     .foregroundStyle(theme.inkSoft)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
-                if entry.carried > 0 {
-                    Text("+\(Fmt.money(entry.carried)) с прошлых дней")
+                if entry.carried != 0 {
+                    Text(entry.carried > 0
+                         ? "+\(Fmt.money(entry.carried)) с прошлых дней"
+                         : "−\(Fmt.money(-entry.carried)) за прошлые дни")
                         .font(.caption2)
-                        .foregroundStyle(theme.positive)
+                        .foregroundStyle(entry.carried > 0 ? theme.positive : theme.danger)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                 }
@@ -178,7 +180,7 @@ struct TodayWidgetView: View {
     }
 
     private func ratio(_ value: Decimal, _ total: Decimal) -> Double {
-        guard total > 0 else { return 0 }
+        guard total > 0 else { return value > 0 || total < 0 ? 1 : 0 }
         return NSDecimalNumber(decimal: value / total).doubleValue
     }
 }

@@ -72,7 +72,14 @@ struct ReceiptSummary: View {
 
     /// «Можно сегодня ещё 7,60 из 25,00 BYN (+5,00 с прошлых дней)».
     private func todayLine(_ status: LimitStatus, carried: Decimal) -> String {
-        let extra = carried > 0 ? " (+\(Fmt.money(carried)) с прошлых дней)" : ""
+        let extra: String
+        if carried > 0 {
+            extra = " (+\(Fmt.money(carried)) с прошлых дней)"
+        } else if carried < 0 {
+            extra = " (−\(Fmt.money(-carried)) за перерасход прошлых дней)"
+        } else {
+            extra = ""
+        }
         if status.spent > status.limit {
             return "Перерасход \(Fmt.money(status.spent - status.limit)) · на сегодня было \(Fmt.money(status.limit))\(extra)"
         }

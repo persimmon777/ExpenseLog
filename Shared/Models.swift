@@ -162,6 +162,11 @@ struct ShoppingItem: Identifiable, Codable, Hashable {
     var price: Decimal?
     var isDone: Bool = false
     var createdAt: Date = Date()
+    /// Магазин для самоопределения: ключ `Merchant.key` и как его написал пользователь.
+    var merchantKey: String?
+    var merchantName: String?
+    /// Операция, которой пункт отметился сам.
+    var matchedTransactionID: UUID?
 }
 
 // MARK: - Регулярные платежи и поступления
@@ -193,6 +198,12 @@ struct RecurringItem: Identifiable, Codable, Hashable {
     var anchor: Date
     var isActive: Bool = true
     var note: String?
+    /// Магазин для самоопределения: ключ `Merchant.key` и как его написал пользователь.
+    var merchantKey: String?
+    var merchantName: String?
+    /// Когда платёж последний раз нашёлся в операциях сам.
+    var lastPaidDate: Date?
+    var lastPaidTransactionID: UUID?
 }
 
 // MARK: - План трат на неделю
@@ -304,6 +315,8 @@ struct AppData: Codable {
         var previouslyDeleted = 0
         /// Сколько фрагментов текста не удалось разобрать.
         var unrecognized = 0
+        /// Что отметилось само: «Молоко (список покупок)», «Яндекс Плюс (регулярный платёж)».
+        var matched: [String] = []
     }
 
     /// Разбирает текст (одно или несколько SMS) и добавляет новые операции.
@@ -342,7 +355,8 @@ struct AppData: Codable {
                 tx.categoryID = matched.categoryID
             }
             transactions.append(tx)
-            result.added.append(tx)
+            result.matched.append(contentsOf: autoMatch(transactionAt: transactions.count - 1))
+            result.added.append(transactions[transactions.count - 1])
             if let balance = sms.balance, lastBalanceDate.map({ tx.date >= $0 }) ?? true {
                 lastBalance = balance
                 lastBalanceDate = tx.date

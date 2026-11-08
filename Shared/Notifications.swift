@@ -117,7 +117,7 @@ enum Notifier {
         center.removePendingNotificationRequests(withIdentifiers: old)
         guard SharedSettings.isEnabled(SharedSettings.Key.notifyRecurring) else { return }
         let cal = Fmt.calendar
-        for item in data.recurring where item.isActive {
+        for item in data.recurring where item.isActive && !item.isUpcomingPaid(now: now) {
             // Две ближайшие даты — чтобы напоминание не пропало, если сегодняшнее уже прошло.
             var day = item.nextDate(onOrAfter: now)
             for _ in 0..<2 {
@@ -141,6 +141,13 @@ enum Notifier {
                 day = item.nextDate(onOrAfter: next)
             }
         }
+    }
+
+    /// «Отмечено само: Молоко — список покупок» (после автодобавления SMS).
+    static func notifyMatched(_ titles: [String]) async {
+        guard !titles.isEmpty, await isAuthorized() else { return }
+        await add(id: "matched-\(UUID().uuidString)", body: "Отмечено само: " + titles.joined(separator: "; "),
+                  trigger: UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false))
     }
 
     /// Пробное уведомление через 5 секунд.

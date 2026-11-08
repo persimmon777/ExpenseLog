@@ -30,6 +30,7 @@ struct AddBankSMSIntent: AppIntent {
         }
         // Дальше по CLAUDE.md: лимиты → еженедельная сводка → резервная копия → виджет.
         await Notifier.refresh()
+        await Notifier.notifyMatched(result.matched)
         if !result.added.isEmpty { Backup.runIfNeeded() }
         WidgetCenter.shared.reloadAllTimelines()
         let summary = result.summary

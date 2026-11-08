@@ -50,6 +50,7 @@ extension AppData {
         tx.source = .manual
         if tx.kind != .expense { tx.categoryID = nil }
         transactions.append(tx)
+        autoMatch(transactionAt: transactions.count - 1)
     }
 
     mutating func setNote(transactionID: UUID, note: String?) {
@@ -268,7 +269,9 @@ extension AppData.IngestResult {
     var summary: String {
         if !added.isEmpty {
             let items = added.map { "\(Merchant.shortName($0.merchant)) \(Fmt.money($0.amount, currency: $0.currency))" }
-            return "Добавлено: " + items.joined(separator: "; ")
+            var text = "Добавлено: " + items.joined(separator: "; ")
+            if !matched.isEmpty { text += ". Отмечено само: " + matched.joined(separator: "; ") }
+            return text
         }
         if duplicates > 0 { return "Уже было — не добавлено" }
         if previouslyDeleted > 0 { return "Вы удаляли эту операцию — не добавлено" }
