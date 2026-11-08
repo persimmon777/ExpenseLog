@@ -36,22 +36,19 @@ struct ReceiptSummary: View {
                 AmountRow(title: "За месяц", value: Fmt.money(data.expenseTotal(in: .month)))
                 AmountRow(title: "Прогноз на месяц", value: Fmt.money(data.monthForecast()))
                 Button(action: onPlannedTap) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        AmountRow(title: "Планируется", value: Fmt.money(data.plannedTotal))
-                        Text(plannedCaption(data))
-                            .font(.caption2)
-                            .foregroundStyle(theme.inkSoft)
-                    }
-                    .contentShape(Rectangle())
+                    AmountRow(title: "Планируется", value: Fmt.money(data.plannedTotal))
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 RuleLine()
                 Button(action: onBalanceTap) {
                     VStack(alignment: .leading, spacing: 2) {
                         AmountRow(title: "На карте", value: data.lastBalance.map { Fmt.money($0) } ?? "указать")
-                        Text(balanceCaption(data))
-                            .font(.caption2)
-                            .foregroundStyle(theme.inkSoft)
+                        if let caption = balanceCaption(data) {
+                            Text(caption)
+                                .font(.caption2)
+                                .foregroundStyle(theme.inkSoft)
+                        }
                     }
                     .contentShape(Rectangle())
                 }
@@ -60,17 +57,10 @@ struct ReceiptSummary: View {
         }
     }
 
-    private func plannedCaption(_ data: AppData) -> String {
-        let count = data.shoppingToBuy.count
-        guard count > 0 else { return "Список покупок пуст · нажмите, чтобы добавить" }
-        return "\(Fmt.plural(count, "пункт", "пункта", "пунктов")) в списке покупок · нажмите, чтобы открыть"
-    }
-
-    private func balanceCaption(_ data: AppData) -> String {
-        guard data.lastBalance != nil, let date = data.lastBalanceDate else {
-            return "Нажмите, чтобы указать остаток на карте"
-        }
+    /// «из SMS, сегодня в 20:41» / «указан вручную, вчера в 09:10».
+    private func balanceCaption(_ data: AppData) -> String? {
+        guard data.lastBalance != nil, let date = data.lastBalanceDate else { return nil }
         let source = data.balanceSetManually ? "указан вручную" : "из SMS"
-        return "\(source), \(Fmt.dayTitle(date).lowercased()) в \(Fmt.time(date)) · нажмите, чтобы изменить"
+        return "\(source), \(Fmt.dayTitle(date).lowercased()) в \(Fmt.time(date))"
     }
 }
