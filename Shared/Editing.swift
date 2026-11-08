@@ -216,3 +216,47 @@ extension AppData {
         return result.sorted { (a: MerchantSummary, b: MerchantSummary) in a.lastDate > b.lastDate }
     }
 }
+
+// MARK: - Список покупок
+
+extension AppData {
+
+    /// Ещё не купленное — сверху новые.
+    var shoppingToBuy: [ShoppingItem] {
+        shoppingList.filter { !$0.isDone }.sorted { (a: ShoppingItem, b: ShoppingItem) in a.createdAt > b.createdAt }
+    }
+
+    var shoppingBought: [ShoppingItem] {
+        shoppingList.filter { $0.isDone }.sorted { (a: ShoppingItem, b: ShoppingItem) in a.createdAt > b.createdAt }
+    }
+
+    /// Планируемые траты: сумма примерных цен того, что ещё не куплено.
+    var plannedTotal: Decimal {
+        shoppingList.filter { !$0.isDone }.reduce(Decimal(0)) { $0 + ($1.price ?? 0) }
+    }
+
+    mutating func addShoppingItem(title: String, price: Decimal?) {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        shoppingList.append(ShoppingItem(title: trimmed, price: price))
+    }
+
+    mutating func updateShoppingItem(_ item: ShoppingItem) {
+        guard let index = shoppingList.firstIndex(where: { $0.id == item.id }) else { return }
+        shoppingList[index] = item
+    }
+
+    mutating func toggleShoppingItem(_ id: UUID) {
+        guard let index = shoppingList.firstIndex(where: { $0.id == id }) else { return }
+        shoppingList[index].isDone.toggle()
+    }
+
+    mutating func deleteShoppingItem(_ id: UUID) {
+        shoppingList.removeAll { $0.id == id }
+    }
+
+    /// «Убрать купленное».
+    mutating func clearBoughtShopping() {
+        shoppingList.removeAll { $0.isDone }
+    }
+}

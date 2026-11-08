@@ -8,6 +8,7 @@ struct ChecksView: View {
     @State private var editing: EditTarget?
     @State private var showManual = false
     @State private var showBalance = false
+    @State private var showShopping = false
     @State private var showPaste = false
     @State private var removed: Transaction?
     @State private var undoTask: Task<Void, Never>?
@@ -18,7 +19,7 @@ struct ChecksView: View {
 
         NavigationStack {
             List {
-                SummaryCard { showBalance = true }
+                SummaryCard(onBalanceTap: { showBalance = true }, onPlannedTap: { showShopping = true })
                     .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
@@ -77,6 +78,9 @@ struct ChecksView: View {
             }
             .sheet(isPresented: $showBalance) {
                 themed(BalanceSheet())
+            }
+            .sheet(isPresented: $showShopping) {
+                themed(ShoppingListSheet())
             }
             .sheet(isPresented: $showManual) {
                 themed(ManualTransactionSheet())

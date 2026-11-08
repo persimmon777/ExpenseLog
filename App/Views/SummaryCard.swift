@@ -6,6 +6,8 @@ struct SummaryCard: View {
     @Environment(\.theme) private var theme
     /// Нажатие на «На карте» — установить баланс вручную.
     let onBalanceTap: () -> Void
+    /// Нажатие на «Планируется» — открыть список покупок.
+    let onPlannedTap: () -> Void
 
     var body: some View {
         let data = store.data
@@ -18,6 +20,17 @@ struct SummaryCard: View {
                 RuleLine()
                 AmountRow(title: "За месяц", value: Fmt.money(data.expenseTotal(in: .month)))
                 AmountRow(title: "Прогноз на месяц", value: Fmt.money(data.monthForecast()))
+                Button(action: onPlannedTap) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        AmountRow(title: "Планируется", value: Fmt.money(data.plannedTotal))
+                        Text(plannedCaption(data))
+                            .font(.caption2)
+                            .foregroundStyle(theme.inkSoft)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                RuleLine()
                 Button(action: onBalanceTap) {
                     VStack(alignment: .leading, spacing: 2) {
                         AmountRow(title: "На карте", value: data.lastBalance.map { Fmt.money($0) } ?? "указать")
@@ -30,6 +43,12 @@ struct SummaryCard: View {
                 .buttonStyle(.plain)
             }
         }
+    }
+
+    private func plannedCaption(_ data: AppData) -> String {
+        let count = data.shoppingToBuy.count
+        guard count > 0 else { return "Список покупок пуст · нажмите, чтобы добавить" }
+        return "\(Fmt.plural(count, "пункт", "пункта", "пунктов")) в списке покупок · нажмите, чтобы открыть"
     }
 
     private func balanceCaption(_ data: AppData) -> String {
