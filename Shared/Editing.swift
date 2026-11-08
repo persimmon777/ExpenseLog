@@ -260,3 +260,18 @@ extension AppData {
         shoppingList.removeAll { $0.isDone }
     }
 }
+
+// MARK: - Текст итога добавления SMS
+
+extension AppData.IngestResult {
+    /// Короткий итог для «Быстрых команд»: «Добавлено: OZON 22,60 BYN», «Уже было», «Не операция — пропущено».
+    var summary: String {
+        if !added.isEmpty {
+            let items = added.map { "\(Merchant.shortName($0.merchant)) \(Fmt.money($0.amount, currency: $0.currency))" }
+            return "Добавлено: " + items.joined(separator: "; ")
+        }
+        if duplicates > 0 { return "Уже было — не добавлено" }
+        if previouslyDeleted > 0 { return "Вы удаляли эту операцию — не добавлено" }
+        return "Не операция по карте — пропущено"
+    }
+}

@@ -130,6 +130,20 @@ enum SharedSettings {
         static let notifyWeeklySummary = "notifyWeeklySummary"
         static let notifyLimits = "notifyLimits"
         static let notifyDebts = "notifyDebts"
+        /// Когда последний раз сработала команда «Добавить SMS банка» и что она сделала.
+        static let lastAutoAddDate = "lastAutoAddDate"
+        static let lastAutoAddResult = "lastAutoAddResult"
+    }
+
+    /// Запомнить последний запуск автодобавления (для экрана-инструкции).
+    static func recordAutoAdd(_ result: String, date: Date = Date()) {
+        AppGroup.defaults.set(date, forKey: Key.lastAutoAddDate)
+        AppGroup.defaults.set(result, forKey: Key.lastAutoAddResult)
+    }
+
+    static var lastAutoAdd: (date: Date, result: String)? {
+        guard let date = AppGroup.defaults.object(forKey: Key.lastAutoAddDate) as? Date else { return nil }
+        return (date, AppGroup.defaults.string(forKey: Key.lastAutoAddResult) ?? "")
     }
 
     static var themeID: ThemeID {

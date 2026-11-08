@@ -22,6 +22,11 @@ struct SettingsView: View {
                         LabeledContent("Оформление", value: "\(themeID.title) · \(palette.name)")
                     }
                     NavigationLink {
+                        AutomationGuideView()
+                    } label: {
+                        LabeledContent("Автодобавление из SMS", value: SharedSettings.lastAutoAdd == nil ? "не настроено" : "работает")
+                    }
+                    NavigationLink {
                         MerchantsView()
                     } label: {
                         LabeledContent("Магазины", value: "\(store.data.merchants().count)")

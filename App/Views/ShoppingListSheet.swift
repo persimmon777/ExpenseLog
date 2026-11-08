@@ -42,9 +42,8 @@ struct ShoppingListSheet: View {
                         itemRow(item)
                     }
                 } header: {
-                    HStack {
+                    HStack(spacing: 6) {
                         header("Купить")
-                        Spacer()
                         Button {
                             startAdding()
                         } label: {
@@ -54,6 +53,7 @@ struct ShoppingListSheet: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel("Добавить покупку")
+                        Spacer()
                     }
                 } footer: {
                     if toBuy.isEmpty && !isAdding {
