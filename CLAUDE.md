@@ -33,7 +33,8 @@
 | `project.yml`, entitlements, иконка, `.github/workflows/build.yml` | ✅ готово, сборка в CI проходит, релиз `latest` публикуется |
 | `App/SpentStore.swift`, `Shared/Theme.swift` (темы «Чек»/«Карта», `ReceiptShape`), `Shared/Formatting.swift` (`Fmt`: суммы, даты, календарь), `Shared/Stats.swift` (итоги, прогноз) | ✅ готово |
 | `App/Views/PaperCard`, `RuleLine`, `AmountRow` — общие компоненты в стиле темы | ✅ готово |
-| `App/Views/RootView.swift` — 5 вкладок; «Аналитика» — пока заглушка (`PlaceholderView`) | ⚠️ частично |
+| `App/Views/RootView.swift` — 5 вкладок | ✅ готово |
+| «Аналитика» (`AnalyticsView`, свой календарь `MonthCalendarView`, `CategoryChart` на Swift Charts, `CategoryPeriodView`), `Shared/Analytics.swift` (`AnalyticsPeriod`, `PeriodSummary`, `summary(_:containing:)`, `reportText`, `deepSeekText`), `Fmt.dayRange` | ✅ готово (по умолчанию — текущий месяц) |
 | «Категории» (`CategoriesView`, `CategoryEditSheet` с лимитом и удалением, `LimitBar`, правила с удалением), «Долги» (`DebtsView`, `DebtEditSheet`, `ReturnDebtSheet`), `Shared/Limits.swift` (`LimitStatus`, `categorySpent`, `limitRunOutDate`, списки долгов), токен темы `warning` | ✅ готово (уведомления о лимитах и долгах — на шаге 7) |
 | Экран «Чеки» (`ChecksView`, `SummaryCard`, `TransactionRow`, `TransactionSheet`, `CategoryTile`, `DebtFormSheet`, `CategoryEditSheet`, `ManualTransactionSheet`, `PasteSMSSheet`, `UndoToast`), `Shared/Editing.swift` (история по дням, ручные операции, заметки, подсказка MCC) | ✅ готово |
 | `App/Views/SettingsView.swift` — пока тема и состояние App Group | ⚠️ частично |
@@ -41,7 +42,7 @@
 | Тема «Лаванда» (`TilesSummary`), свои цвета фона и основного цвета в каждой теме, суммы по дням в истории | ✅ готово |
 | Список покупок (`ShoppingListSheet`, `ShoppingItemEditSheet`, «Планируется» в чеке), баланс карты вручную (`BalanceSheet`), «Учитывать в расчёте трат», магазины (`MerchantsView`, `MerchantEditSheet`), режим разбора «Без категории» | ✅ готово |
 | App Intent `AddBankSMSIntent` + `SpentShortcuts` (`App/Intents/`), экран-инструкция `AutomationGuideView` (Настройки → «Автодобавление из SMS», последний запуск — `SharedSettings.recordAutoAdd`) | ✅ готово, на телефоне не проверено |
-| «Аналитика», уведомления, резервная копия | ⏳ не начато |
+| Уведомления, резервная копия | ⏳ не начато |
 
 **Порядок дальнейшей работы:**
 1. Первая сборка в CI → убедиться, что `.ipa` собирается и ставится через SideStore, диагностический экран показывает «Общая папка: работает».
