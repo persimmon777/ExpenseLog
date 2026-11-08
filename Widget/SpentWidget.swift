@@ -96,10 +96,15 @@ struct BalanceEntry: TimelineEntry {
     let balance: Decimal?
     let balanceDate: Date?
     let isManual: Bool
+    /// Сколько ещё можно сегодня (nil — план не задан).
+    let canSpend: Decimal?
+    /// Перерасход только за сегодня.
+    let overspentToday: Decimal
     let isShared: Bool
     let theme: Theme
 
-    static let sample = BalanceEntry(date: Date(), balance: 512.4, balanceDate: Date(), isManual: false, isShared: true, theme: .receipt)
+    static let sample = BalanceEntry(date: Date(), balance: 512.4, balanceDate: Date(), isManual: false,
+                                     canSpend: 8.4, overspentToday: 0, isShared: true, theme: .receipt)
 }
 
 struct BalanceProvider: TimelineProvider {
@@ -110,14 +115,17 @@ struct BalanceProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<BalanceEntry>) -> Void) {
-        // Обновляется после каждой операции (reloadAllTimelines); на всякий случай — раз в час.
-        completion(Timeline(entries: [makeEntry()], policy: .after(Date().addingTimeInterval(3600))))
+        // Обновляется после каждой операции (reloadAllTimelines) и в полночь — новый лимит дня.
+        let tomorrow = Fmt.calendar.date(byAdding: .day, value: 1, to: Date()) ?? Date().addingTimeInterval(86_400)
+        completion(Timeline(entries: [makeEntry()], policy: .after(Fmt.calendar.startOfDay(for: tomorrow))))
     }
 
     private func makeEntry() -> BalanceEntry {
         let data = DataFile.load()
-        return BalanceEntry(date: Date(), balance: data.lastBalance, balanceDate: data.lastBalanceDate,
-                            isManual: data.balanceSetManually, isShared: AppGroup.isShared, theme: Theme.current)
+        let now = Date()
+        return BalanceEntry(date: now, balance: data.lastBalance, balanceDate: data.lastBalanceDate,
+                            isManual: data.balanceSetManually, canSpend: data.canSpendToday(now: now),
+                            overspentToday: data.overspentToday(now: now), isShared: AppGroup.isShared, theme: Theme.current)
     }
 }
 
@@ -126,8 +134,8 @@ struct BalanceWidget: Widget {
         StaticConfiguration(kind: "SpentBalance", provider: BalanceProvider()) { entry in
             BalanceWidgetView(entry: entry)
         }
-        .configurationDisplayName("Баланс карты")
-        .description("Остаток на карте из последней SMS банка.")
+        .configurationDisplayName("Баланс и можно сегодня")
+        .description("Остаток на карте и сколько ещё можно потратить сегодня.")
         .supportedFamilies([.systemSmall, .accessoryRectangular, .accessoryInline])
     }
 }
