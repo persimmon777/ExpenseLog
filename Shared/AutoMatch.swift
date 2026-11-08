@@ -6,11 +6,14 @@ import Foundation
 
 extension AppData {
 
-    /// Допуск по сумме: ±20% от ожидаемой. Без ожидаемой суммы подходит любая.
-    static func amountMatches(_ amount: Decimal, expected: Decimal?) -> Bool {
+    /// Допуск по сумме по умолчанию, %.
+    static let defaultTolerancePercent = 20
+
+    /// Сумма в пределах ±percent% от ожидаемой. Без ожидаемой суммы подходит любая.
+    static func amountMatches(_ amount: Decimal, expected: Decimal?, percent: Int = AppData.defaultTolerancePercent) -> Bool {
         guard let expected, expected > 0 else { return true }
         let diff = amount > expected ? amount - expected : expected - amount
-        return diff <= expected / 5
+        return diff <= expected * Decimal(max(percent, 0)) / 100
     }
 
     /// Магазин операции совпадает с указанным: «OZON» найдётся в «OMBSHOP.OZON.BY».
@@ -44,7 +47,7 @@ extension AppData {
         if let i = recurring.firstIndex(where: { item in
             item.isActive && !item.isIncome
                 && AppData.merchantMatches(tx.merchant, key: item.merchantKey)
-                && AppData.amountMatches(tx.amount, expected: item.amount)
+                && AppData.amountMatches(tx.amount, expected: item.amount, percent: item.tolerance)
                 && !item.isPaid(near: tx.date)
         }) {
             recurring[i].lastPaidDate = tx.date
@@ -59,6 +62,9 @@ extension AppData {
 }
 
 extension RecurringItem {
+
+    /// Допуск по сумме, %.
+    var tolerance: Int { tolerancePercent ?? AppData.defaultTolerancePercent }
 
     /// Окно, в котором оплата считается за один и тот же период.
     var matchWindowDays: Int {

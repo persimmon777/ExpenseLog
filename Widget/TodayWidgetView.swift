@@ -51,7 +51,16 @@ struct TodayWidgetView: View {
 
     private var todayColumn: some View {
         VStack(alignment: .leading, spacing: 4) {
-            if let canSpend = entry.canSpend, let plan = entry.dayPlan {
+            if !entry.isShared {
+                Text("Нет доступа к данным")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(theme.danger)
+                Text("Откройте Spent → Настройки → «Общая папка». В SideStore включите Auto-Fix AppGroup IDs и переустановите Spent.")
+                    .font(.caption2)
+                    .foregroundStyle(theme.inkSoft)
+                    .lineLimit(5)
+                    .minimumScaleFactor(0.8)
+            } else if let canSpend = entry.canSpend, let plan = entry.dayPlan {
                 Text(canSpend >= 0 ? "Можно сегодня" : "Перерасход")
                     .font(.caption)
                     .foregroundStyle(canSpend >= 0 ? theme.inkSoft : theme.danger)
@@ -84,7 +93,7 @@ struct TodayWidgetView: View {
                     .foregroundStyle(theme.ink)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
-                Text("Задайте план в Spent — покажу, сколько можно")
+                Text("Задайте план: Spent → Настройки → План трат — покажу, сколько можно")
                     .font(.caption2)
                     .foregroundStyle(theme.inkSoft)
                     .lineLimit(2)
