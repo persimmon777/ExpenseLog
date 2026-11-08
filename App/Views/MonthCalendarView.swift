@@ -94,19 +94,24 @@ struct MonthCalendarView: View {
         return Button {
             onSelectDay(day)
         } label: {
-            VStack(spacing: 3) {
+            VStack(spacing: 2) {
                 Text("\(cal.component(.day, from: day))")
                     .font(.subheadline.weight(isToday ? .bold : .regular))
                     .foregroundStyle(isPicked ? theme.onAccent : (inMonth ? theme.ink : theme.inkSoft.opacity(0.5)))
+                    .frame(width: 34, height: 34)
+                    .background(
+                        Circle()
+                            .fill(isPicked ? theme.accent : (inSelection ? theme.accent.opacity(0.15) : Color.clear))
+                    )
+                    .overlay(
+                        Circle()
+                            .strokeBorder(isToday && !isPicked ? theme.accent : Color.clear, lineWidth: 1)
+                    )
                 Circle()
-                    .fill(total > 0 ? (isPicked ? theme.onAccent : theme.accent).opacity(0.3 + 0.7 * level) : Color.clear)
+                    .fill(total > 0 ? theme.accent.opacity(0.3 + 0.7 * level) : Color.clear)
                     .frame(width: 5, height: 5)
             }
-            .frame(maxWidth: .infinity, minHeight: 40)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(isPicked ? theme.accent : (inSelection ? theme.accent.opacity(0.15) : Color.clear))
-            )
+            .frame(maxWidth: .infinity, minHeight: 44)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

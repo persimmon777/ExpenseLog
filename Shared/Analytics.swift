@@ -60,20 +60,34 @@ struct PeriodSummary {
     let income: Decimal
     let transfers: Decimal
     let debtGiven: Decimal
-    /// Изменение к прошлому такому же периоду, %.
-    let changePercent: Int?
+    /// Изменение к прошлому такому же периоду, %. Для «Дня» не считается (владелец попросил).
+    let changePercent: Double?
+    /// План трат на период (из плана на неделю).
+    let plan: Decimal?
 
-    func percent(of value: Decimal) -> Int {
+    /// Доля категории в тратах, %.
+    func percent(of value: Decimal) -> Double {
         guard total > 0 else { return 0 }
-        return Int((NSDecimalNumber(decimal: value / total * 100).doubleValue).rounded())
+        return NSDecimalNumber(decimal: value / total * 100).doubleValue
     }
 
-    /// «на 12% меньше, чем на прошлой неделе».
+    /// «45,3%».
+    func percentText(of value: Decimal) -> String {
+        Fmt.percent(percent(of: value))
+    }
+
+    /// «На 12,4% меньше, чем на прошлой неделе».
     var comparisonText: String? {
         guard let change = changePercent else { return nil }
-        if change == 0 { return "Столько же, сколько \(period.previousPhrase)" }
+        if abs(change) < 0.05 { return "Столько же, сколько \(period.previousPhrase)" }
         let word = change < 0 ? "меньше" : "больше"
-        return "На \(abs(change))% \(word), чем \(period.previousPhrase)"
+        return "На \(Fmt.percent(abs(change))) \(word), чем \(period.previousPhrase)"
+    }
+
+    /// Потрачено из плана — для полоски.
+    var planStatus: LimitStatus? {
+        guard let plan, plan > 0 else { return nil }
+        return LimitStatus(spent: total, limit: plan)
     }
 
     /// «8 ноября» / «2–8 ноября» / «Ноябрь 2026».
@@ -130,9 +144,12 @@ extension AppData {
             inPeriod.filter { $0.kind == kind }.reduce(Decimal(0)) { $0 + $1.amount }
         }
 
-        var change: Int?
-        if let prevStart = cal.date(byAdding: period.component, value: -1, to: start) {
-            change = AppData.percentChange(total, expenseTotal(from: prevStart, to: start))
+        var change: Double?
+        if period != .day, let prevStart = cal.date(byAdding: period.component, value: -1, to: start) {
+            let previous = expenseTotal(from: prevStart, to: start)
+            if previous > 0 {
+                change = NSDecimalNumber(decimal: (total - previous) / previous * 100).doubleValue
+            }
         }
 
         return PeriodSummary(
@@ -140,7 +157,8 @@ extension AppData {
             total: total, count: spending.count,
             categories: categoryTotals,
             income: sum(.income), transfers: sum(.transfer), debtGiven: sum(.debtGiven),
-            changePercent: change
+            changePercent: change,
+            plan: plan(period, containing: date)
         )
     }
 
@@ -170,8 +188,9 @@ extension AppData {
     func reportText(_ s: PeriodSummary) -> String {
         var lines = ["Spent: отчёт за \(s.reportPeriod)"]
         lines.append("Потрачено: \(Fmt.money(s.total)) (\(Fmt.plural(s.count, "покупка", "покупки", "покупок")))")
+        if let plan = s.plan { lines.append("План: \(Fmt.money(plan))") }
         for item in s.categories where item.categoryID != nil {
-            lines.append("\(item.name): \(Fmt.money(item.total)) (\(s.percent(of: item.total))%)")
+            lines.append("\(item.name): \(Fmt.money(item.total)) (\(s.percentText(of: item.total)))")
         }
         if let none = s.categories.first(where: { $0.categoryID == nil }) {
             lines.append("Без категории: \(Fmt.money(none.total))")
