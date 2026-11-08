@@ -5,8 +5,10 @@ struct ChecksView: View {
     @EnvironmentObject private var store: SpentStore
     @Environment(\.theme) private var theme
 
-    @State private var editing: Transaction?
+    @State private var editing: EditTarget?
     @State private var showManual = false
+    @State private var showBalance = false
+    @State private var showShopping = false
     @State private var showPaste = false
     @State private var removed: Transaction?
     @State private var undoTask: Task<Void, Never>?
@@ -17,18 +19,18 @@ struct ChecksView: View {
 
         NavigationStack {
             List {
-                SummaryCard()
+                SummaryCard(onBalanceTap: { showBalance = true }, onPlannedTap: { showShopping = true })
                     .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
 
                 if !uncategorized.isEmpty {
                     Section {
-                        ForEach(uncategorized) { tx in row(tx) }
+                        ForEach(uncategorized) { tx in row(tx, sorting: true) }
                     } header: {
                         sectionHeader("Без категории · \(uncategorized.count)")
                     } footer: {
-                        Text("Нажмите на покупку, чтобы выбрать категорию.")
+                        Text("Нажмите на покупку и выбирайте категории подряд — после выбора сразу откроется следующая.")
                             .foregroundStyle(theme.inkSoft)
                     }
                 }
@@ -71,8 +73,14 @@ struct ChecksView: View {
                     .accessibilityLabel("Добавить операцию")
                 }
             }
-            .sheet(item: $editing) { tx in
-                themed(TransactionSheet(transactionID: tx.id))
+            .sheet(item: $editing) { target in
+                themed(TransactionSheet(transactionID: target.transactionID, sortingQueue: target.sortingQueue))
+            }
+            .sheet(isPresented: $showBalance) {
+                themed(BalanceSheet())
+            }
+            .sheet(isPresented: $showShopping) {
+                themed(ShoppingListSheet())
             }
             .sheet(isPresented: $showManual) {
                 themed(ManualTransactionSheet())
@@ -82,7 +90,7 @@ struct ChecksView: View {
             }
             .overlay(alignment: .bottom) {
                 if let removed {
-                    UndoToast(text: "Удалено: \(removed.title)") { undoDelete(removed) }
+                    UndoToast(text: "Удалено: \(store.data.displayTitle(for: removed))") { undoDelete(removed) }
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
@@ -91,11 +99,11 @@ struct ChecksView: View {
 
     // MARK: Части
 
-    private func row(_ tx: Transaction) -> some View {
+    private func row(_ tx: Transaction, sorting: Bool = false) -> some View {
         Button {
-            editing = tx
+            editing = EditTarget(transactionID: tx.id, sortingQueue: sorting)
         } label: {
-            TransactionRow(tx: tx, category: store.data.category(tx.categoryID))
+            TransactionRow(tx: tx, title: store.data.displayTitle(for: tx), category: store.data.category(tx.categoryID))
         }
         .buttonStyle(.plain)
         .listRowBackground(theme.paper)
@@ -143,4 +151,12 @@ struct ChecksView: View {
         store.mutate { $0.restoreTransaction(tx) }
         withAnimation { removed = nil }
     }
+}
+
+/// Какую операцию открыть и в каком режиме.
+private struct EditTarget: Identifiable {
+    let id = UUID()
+    let transactionID: UUID
+    /// Открыто из «Без категории»: после выбора категории сразу следующая.
+    let sortingQueue: Bool
 }

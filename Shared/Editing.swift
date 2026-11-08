@@ -112,3 +112,151 @@ enum MCCHint {
         return table[mcc]
     }
 }
+
+// MARK: - Баланс карты
+
+extension AppData {
+    /// Установить остаток на карте вручную (если какие-то операции не попали в приложение).
+    /// Следующая SMS с остатком (новее этого момента) снова обновит его автоматически.
+    mutating func setBalance(_ value: Decimal, date: Date = Date()) {
+        lastBalance = value
+        lastBalanceDate = date
+        balanceSetManually = true
+    }
+
+    // MARK: Учитывать в расчёте
+
+    /// Галочка «Учитывать в расчёте трат». Выключено — трата остаётся в истории,
+    /// но не попадает в итоги, категории, лимиты и виджет.
+    mutating func setExcluded(transactionID: UUID, excluded: Bool) {
+        guard let index = transactions.firstIndex(where: { $0.id == transactionID }) else { return }
+        transactions[index].excludedFromTotals = excluded ? true : nil
+    }
+}
+
+// MARK: - Магазины
+
+/// Магазин в списке «Магазины»: все операции с одним ключом `Merchant.key`.
+struct MerchantSummary: Identifiable {
+    /// Ключ магазина (`Merchant.key`).
+    let key: String
+    /// Как магазин называется в SMS.
+    let originalName: String
+    /// Своё название, если задано.
+    let customName: String?
+    let count: Int
+    /// Сумма трат (только те, что учитываются в расчёте).
+    let total: Decimal
+    let lastDate: Date
+    let ruleCategoryID: UUID?
+
+    var id: String { key }
+    var name: String { customName ?? originalName }
+}
+
+extension AppData {
+
+    /// Своё название магазина или как в SMS.
+    func merchantName(_ merchant: String) -> String {
+        let key = Merchant.key(merchant)
+        if !key.isEmpty, let custom = merchantNames[key] { return custom }
+        return Merchant.shortName(merchant)
+    }
+
+    /// Заголовок операции с учётом своих названий магазинов.
+    func displayTitle(for tx: Transaction) -> String {
+        if tx.placeSubtitle != nil { return tx.title }
+        return merchantName(tx.merchant)
+    }
+
+    /// Задать своё название магазина. Пустое — вернуть название из SMS.
+    mutating func renameMerchant(_ merchant: String, to name: String?) {
+        let key = Merchant.key(merchant)
+        guard !key.isEmpty else { return }
+        let trimmed = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if trimmed.isEmpty || trimmed == Merchant.shortName(merchant) {
+            merchantNames[key] = nil
+        } else {
+            merchantNames[key] = trimmed
+        }
+    }
+
+    /// Правило «магазин → категория». `nil` — убрать правило.
+    /// Новое правило сразу применяется к неотсортированным тратам в этом магазине.
+    mutating func setRule(forMerchant merchant: String, categoryID: UUID?) {
+        let key = Merchant.key(merchant)
+        guard !key.isEmpty else { return }
+        rules.removeAll { $0.pattern == key }
+        guard let categoryID else { return }
+        rules.append(MerchantRule(pattern: key, displayName: Merchant.shortName(merchant), categoryID: categoryID))
+        for i in transactions.indices where transactions[i].isUncategorized && Merchant.key(transactions[i].merchant) == key {
+            transactions[i].categoryID = categoryID
+        }
+    }
+
+    /// Все магазины, где были траты, — последние сверху.
+    func merchants() -> [MerchantSummary] {
+        let purchases = transactions.filter { $0.placeSubtitle == nil && $0.kind != .income && $0.kind != .debtReturn }
+        let grouped = Dictionary(grouping: purchases) { (tx: Transaction) in Merchant.key(tx.merchant) }
+        var result: [MerchantSummary] = []
+        for (key, items) in grouped where !key.isEmpty {
+            let sorted = items.sorted { (a: Transaction, b: Transaction) in a.date > b.date }
+            guard let latest = sorted.first else { continue }
+            let total = items.filter { $0.countsAsExpense }.reduce(Decimal(0)) { $0 + $1.amount }
+            result.append(MerchantSummary(
+                key: key,
+                originalName: Merchant.shortName(latest.merchant),
+                customName: merchantNames[key],
+                count: items.count,
+                total: total,
+                lastDate: latest.date,
+                ruleCategoryID: rules.first(where: { $0.pattern == key })?.categoryID
+            ))
+        }
+        return result.sorted { (a: MerchantSummary, b: MerchantSummary) in a.lastDate > b.lastDate }
+    }
+}
+
+// MARK: - Список покупок
+
+extension AppData {
+
+    /// Ещё не купленное — сверху новые.
+    var shoppingToBuy: [ShoppingItem] {
+        shoppingList.filter { !$0.isDone }.sorted { (a: ShoppingItem, b: ShoppingItem) in a.createdAt > b.createdAt }
+    }
+
+    var shoppingBought: [ShoppingItem] {
+        shoppingList.filter { $0.isDone }.sorted { (a: ShoppingItem, b: ShoppingItem) in a.createdAt > b.createdAt }
+    }
+
+    /// Планируемые траты: сумма примерных цен того, что ещё не куплено.
+    var plannedTotal: Decimal {
+        shoppingList.filter { !$0.isDone }.reduce(Decimal(0)) { $0 + ($1.price ?? 0) }
+    }
+
+    mutating func addShoppingItem(title: String, price: Decimal?) {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        shoppingList.append(ShoppingItem(title: trimmed, price: price))
+    }
+
+    mutating func updateShoppingItem(_ item: ShoppingItem) {
+        guard let index = shoppingList.firstIndex(where: { $0.id == item.id }) else { return }
+        shoppingList[index] = item
+    }
+
+    mutating func toggleShoppingItem(_ id: UUID) {
+        guard let index = shoppingList.firstIndex(where: { $0.id == id }) else { return }
+        shoppingList[index].isDone.toggle()
+    }
+
+    mutating func deleteShoppingItem(_ id: UUID) {
+        shoppingList.removeAll { $0.id == id }
+    }
+
+    /// «Убрать купленное».
+    mutating func clearBoughtShopping() {
+        shoppingList.removeAll { $0.isDone }
+    }
+}

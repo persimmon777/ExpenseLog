@@ -1,11 +1,11 @@
 import Foundation
 
-/// Статистика расходов. Везде, где считаются расходы, — только `kind.countsAsExpense`.
+/// Статистика расходов. Везде, где считаются расходы, — только `tx.countsAsExpense`.
 extension AppData {
 
     /// Траты за полуинтервал [start, end).
     func expenses(from start: Date, to end: Date) -> [Transaction] {
-        transactions.filter { $0.kind.countsAsExpense && $0.date >= start && $0.date < end }
+        transactions.filter { $0.countsAsExpense && $0.date >= start && $0.date < end }
     }
 
     func expenseTotal(from start: Date, to end: Date) -> Decimal {

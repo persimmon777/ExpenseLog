@@ -18,6 +18,15 @@ struct SettingsView: View {
                     }
                     .pickerStyle(.segmented)
                 }
+                Section {
+                    NavigationLink {
+                        MerchantsView()
+                    } label: {
+                        LabeledContent("Магазины", value: "\(store.data.merchants().count)")
+                    }
+                } footer: {
+                    Text("Свои названия магазинов и категории, к которым они всегда относятся.")
+                }
                 Section("Состояние") {
                     LabeledContent("Общая папка", value: AppGroup.isShared ? "работает" : "не найдена")
                     LabeledContent("Операций", value: "\(store.data.transactions.count)")
