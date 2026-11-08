@@ -39,7 +39,7 @@ struct TodayWidgetView: View {
             if let canSpend = entry.canSpend {
                 Text(entry.overspentToday > 0 ? "Перерасход: \(Fmt.money(entry.overspentToday))" : "Можно: \(Fmt.money(max(canSpend, 0)))")
             } else {
-                Text("Монетка: \(Fmt.money(entry.total))")
+                Text("Coin: \(Fmt.money(entry.total))")
             }
         default:
             todayColumn
@@ -55,7 +55,7 @@ struct TodayWidgetView: View {
                 Text("Нет доступа к данным")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(theme.danger)
-                Text("Откройте Монетку → Настройки → «Общая папка» и пришлите скриншот диагностики.")
+                Text("Откройте Coin → Настройки → «Общая папка» и пришлите скриншот диагностики.")
                     .font(.caption2)
                     .foregroundStyle(theme.inkSoft)
                     .lineLimit(5)
@@ -92,7 +92,7 @@ struct TodayWidgetView: View {
                     .foregroundStyle(theme.ink)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
-                Text("Задайте план: Монетка → Настройки → План трат — покажу, сколько можно")
+                Text("Задайте план: Coin → Настройки → План трат — покажу, сколько можно")
                     .font(.caption2)
                     .foregroundStyle(theme.inkSoft)
                     .lineLimit(2)

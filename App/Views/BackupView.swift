@@ -49,7 +49,7 @@ struct BackupView: View {
             } header: {
                 Text("Автоматическая копия")
             } footer: {
-                Text("Удобнее всего: «Файлы» → iCloud Drive → создайте папку Монетка и выберите её. Копия сохраняется при каждом открытии приложения и после изменений (не чаще раза в минуту), хранятся последние 10. Если телефон потеряется — данные останутся в iCloud.")
+                Text("Удобнее всего: «Файлы» → iCloud Drive → создайте папку Coin и выберите её. Копия сохраняется при каждом открытии приложения и после изменений (не чаще раза в минуту), хранятся последние 10. Если телефон потеряется — данные останутся в iCloud.")
             }
 
             Section {
@@ -131,7 +131,7 @@ struct BackupView: View {
         defer { if accessing { url.stopAccessingSecurityScopedResource() } }
         guard let raw = try? Data(contentsOf: url), let data = DataFile.decodeBackup(raw) else {
             message = nil
-            AppGroup.defaults.set("Это не файл копии Монетки.", forKey: SharedSettings.Key.backupLastError)
+            AppGroup.defaults.set("Это не файл копии Coin.", forKey: SharedSettings.Key.backupLastError)
             refreshID = UUID()
             return
         }

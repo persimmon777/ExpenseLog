@@ -1,4 +1,4 @@
-# Генератор иконки «Монетка»: золотая монета с «Br» на зелёном фоне. Запуск: python3 Tools/make_icon.py (нужен Pillow).
+# Генератор иконки Coin: золотая монета без надписи на зелёном фоне. Запуск: python3 Tools/make_icon.py (нужен Pillow).
 import math, sys
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageChops
 
@@ -68,22 +68,15 @@ paste_circle(bg, radial(r3, (196, 132, 18), (232, 170, 40), (0.2, 0.25)), r3, (c
 r4 = R*0.74
 paste_circle(bg, radial(r4, (255, 230, 140), (226, 160, 34)), r4, (cx, cy))
 
-# Знак «Br» с тиснением: светлая тень снизу-справа, тёмная сверху-слева
-draw = ImageDraw.Draw(bg)
-font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf", int(R*0.82))
-text = "Br"
-bbox = draw.textbbox((0, 0), text, font=font)
-tw, th = bbox[2]-bbox[0], bbox[3]-bbox[1]
-tx, ty = cx - tw/2 - bbox[0], cy - th/2 - bbox[1]
-# мягкое тиснение: размытые светлая и тёмная подложки
-def text_layer(dx, dy, blur):
-    m = Image.new("L", (S, S), 0)
-    ImageDraw.Draw(m).text((tx+dx, ty+dy), text, font=font, fill=255)
-    return m.filter(ImageFilter.GaussianBlur(blur)) if blur else m
-off = S*0.004
-bg.paste(Image.new("RGB", (S, S), (255, 240, 180)), (0, 0), text_layer(off, off, S*0.002))
-bg.paste(Image.new("RGB", (S, S), (140, 84, 4)), (0, 0), text_layer(-off*0.6, -off*0.6, S*0.002))
-bg.paste(Image.new("RGB", (S, S), (200, 132, 16)), (0, 0), text_layer(0, 0, 0))
+# Лицевая сторона без надписи: мягкое внутреннее кольцо-тиснение
+ring = Image.new("L", (S, S), 0)
+rd = ImageDraw.Draw(ring)
+rr = R*0.52
+rd.ellipse([cx-rr, cy-rr, cx+rr, cy+rr], outline=255, width=int(S*0.006))
+ring_dark = ImageChops.offset(ring, -int(S*0.003), -int(S*0.003)).filter(ImageFilter.GaussianBlur(S*0.002))
+ring_light = ImageChops.offset(ring, int(S*0.003), int(S*0.003)).filter(ImageFilter.GaussianBlur(S*0.002))
+bg.paste(Image.new("RGB", (S, S), (255, 240, 180)), (0, 0), ring_light)
+bg.paste(Image.new("RGB", (S, S), (176, 112, 10)), (0, 0), ring_dark)
 
 # Блик на монете
 shine = Image.new("L", (S, S), 0)

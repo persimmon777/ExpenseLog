@@ -187,7 +187,7 @@ extension AppData {
 
     /// Отчёт в формате CLAUDE.md, 5.2.
     func reportText(_ s: PeriodSummary) -> String {
-        var lines = ["Монетка: отчёт за \(s.reportPeriod)"]
+        var lines = ["Coin: отчёт за \(s.reportPeriod)"]
         lines.append("Потрачено: \(Fmt.money(s.total)) (\(Fmt.plural(s.count, "покупка", "покупки", "покупок")))")
         if let plan = s.plan { lines.append("План: \(Fmt.money(plan))") }
         for item in s.categories where item.categoryID != nil {
