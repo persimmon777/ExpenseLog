@@ -110,10 +110,23 @@ enum DataFile {
     }
 
     private static func saveUnlocked(_ data: AppData) {
+        guard let raw = encode(data) else { return }
+        try? raw.write(to: url, options: [.atomic])
+    }
+
+    /// JSON всех данных — для резервной копии и экспорта.
+    static func encode(_ data: AppData) -> Data? {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        guard let raw = try? encoder.encode(data) else { return }
-        try? raw.write(to: url, options: [.atomic])
+        return try? encoder.encode(data)
+    }
+
+    /// Прочитать данные из файла копии. `nil` — это не файл Spent.
+    static func decodeBackup(_ raw: Data) -> AppData? {
+        // Пустой JSON «{}» тоже прочитался бы — проверяем, что в файле действительно данные Spent.
+        guard let dict = try? JSONSerialization.jsonObject(with: raw) as? [String: Any],
+              dict["transactions"] != nil || dict["categories"] != nil else { return nil }
+        return try? JSONDecoder().decode(AppData.self, from: raw)
     }
 }
 
@@ -127,6 +140,8 @@ enum SharedSettings {
         /// Security-scoped bookmark папки для автокопий (см. CLAUDE.md, «Резервная копия»).
         static let backupFolderBookmark = "backupFolderBookmark"
         static let lastBackupDate = "lastBackupDate"
+        static let backupFolderName = "backupFolderName"
+        static let backupLastError = "backupLastError"
         static let notifyWeeklySummary = "notifyWeeklySummary"
         static let notifyLimits = "notifyLimits"
         static let notifyDebts = "notifyDebts"

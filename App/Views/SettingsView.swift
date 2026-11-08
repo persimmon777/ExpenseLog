@@ -27,6 +27,11 @@ struct SettingsView: View {
                         LabeledContent("План трат", value: store.data.currentBasePlan.map { "\(Fmt.money($0)) в неделю" } ?? "не задан")
                     }
                     NavigationLink {
+                        BackupView()
+                    } label: {
+                        LabeledContent("Резервная копия", value: Backup.isConfigured ? (Backup.lastError == nil ? "включена" : "ошибка") : "выключена")
+                    }
+                    NavigationLink {
                         NotificationSettingsView()
                     } label: {
                         Text("Уведомления")
