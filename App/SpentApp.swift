@@ -13,8 +13,7 @@ struct SpentApp: App {
 
     var body: some Scene {
         WindowGroup {
-            // ВРЕМЕННО: диагностический экран вместо вкладок (см. CLAUDE.md, «Экраны»).
-            DiagnosticsView()
+            RootView()
                 .environmentObject(store)
                 .environment(\.theme, theme)
                 .preferredColorScheme(theme.colorScheme)

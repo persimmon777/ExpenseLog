@@ -62,6 +62,20 @@ enum Fmt {
     /// «20:41».
     static func time(_ date: Date) -> String { timeFormatter.string(from: date) }
 
+    /// Русское склонение: plural(3, "операция", "операции", "операций") → «3 операции».
+    static func plural(_ n: Int, _ one: String, _ few: String, _ many: String) -> String {
+        let n10 = n % 10, n100 = n % 100
+        let word: String
+        if n10 == 1 && n100 != 11 {
+            word = one
+        } else if (2...4).contains(n10) && !(12...14).contains(n100) {
+            word = few
+        } else {
+            word = many
+        }
+        return "\(n) \(word)"
+    }
+
     /// Заголовок дня в истории: «Сегодня», «Вчера», «5 ноября».
     static func dayTitle(_ date: Date, now: Date = Date()) -> String {
         if calendar.isDate(date, inSameDayAs: now) { return "Сегодня" }
