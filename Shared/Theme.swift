@@ -22,6 +22,8 @@ struct Theme {
     /// Текст поверх основного цвета (большая карточка «Сегодня» в «Лаванде», кнопки).
     var onAccent: Color
     var positive: Color
+    /// Предупреждение (лимит 80–99%).
+    var warning: Color
     var danger: Color
     /// Рваный зубчатый край снизу у карточек и пунктирные разделители («Чек»).
     let isReceipt: Bool
@@ -42,6 +44,7 @@ struct Theme {
         accent: Color(hex: "5B3CC4"),
         onAccent: Color(hex: "FFFFFF"),
         positive: Color(hex: "2E7D4F"),
+        warning: Color(hex: "B7791F"),
         danger: Color(hex: "C62828"),
         isReceipt: true,
         usesTiles: false,
@@ -60,6 +63,7 @@ struct Theme {
         accent: Color(hex: "A08CFF"),
         onAccent: Color(hex: "0F1114"),
         positive: Color(hex: "5FD08F"),
+        warning: Color(hex: "F5C04A"),
         danger: Color(hex: "FF6B6B"),
         isReceipt: false,
         usesTiles: false,
@@ -78,6 +82,7 @@ struct Theme {
         accent: Color(hex: "8B74F0"),
         onAccent: Color(hex: "FFFFFF"),
         positive: Color(hex: "2E9E5B"),
+        warning: Color(hex: "C98A00"),
         danger: Color(hex: "E5484D"),
         isReceipt: false,
         usesTiles: true,
@@ -104,6 +109,7 @@ struct Theme {
             theme.rule = Color(hex: light.rule)
             theme.onAccent = Color(hex: light.onAccent)
             theme.positive = Color(hex: light.positive)
+            theme.warning = Color(hex: "B7791F")
             theme.danger = Color(hex: light.danger)
             theme.colorScheme = .light
         }
