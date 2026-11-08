@@ -32,6 +32,11 @@ struct SettingsView: View {
                         LabeledContent("Автодобавление из SMS", value: SharedSettings.lastAutoAdd == nil ? "не настроено" : "работает")
                     }
                     NavigationLink {
+                        ImportHistoryView()
+                    } label: {
+                        Text("Импорт истории SMS")
+                    }
+                    NavigationLink {
                         MerchantsView()
                     } label: {
                         LabeledContent("Магазины", value: "\(store.data.merchants().count)")
