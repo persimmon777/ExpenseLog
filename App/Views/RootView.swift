@@ -8,7 +8,7 @@ struct RootView: View {
         TabView {
             ChecksView()
                 .tabItem { Label("Чеки", systemImage: "list.bullet.rectangle") }
-            PlaceholderView(title: "Аналитика", text: "Календарь, итоги и гистограмма по категориям появятся на следующих шагах.")
+            AnalyticsView()
                 .tabItem { Label("Аналитика", systemImage: "chart.bar") }
             DebtsView()
                 .tabItem { Label("Долги", systemImage: "person.2") }

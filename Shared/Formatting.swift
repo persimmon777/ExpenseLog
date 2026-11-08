@@ -53,6 +53,15 @@ enum Fmt {
     /// «8 ноября».
     static func dayMonth(_ date: Date) -> String { dayMonthFormatter.string(from: date) }
 
+    /// «2–8 ноября» или «28 октября – 3 ноября». `endExclusive` — начало дня после последнего.
+    static func dayRange(_ start: Date, endExclusive: Date) -> String {
+        let last = calendar.date(byAdding: .day, value: -1, to: endExclusive) ?? start
+        if calendar.isDate(start, equalTo: last, toGranularity: .month) {
+            return "\(calendar.component(.day, from: start))–\(dayMonth(last))"
+        }
+        return "\(dayMonth(start)) – \(dayMonth(last))"
+    }
+
     /// «Ноябрь 2026».
     static func monthYear(_ date: Date) -> String {
         let s = monthYearFormatter.string(from: date)
