@@ -1,7 +1,22 @@
 import SwiftUI
 
-/// Карточка-«чек» вверху главной: сегодня, за месяц, остаток, прогноз.
+/// Сводка вверху главной. «Лаванда» — плитки, остальные темы — карточка-«чек».
 struct SummaryCard: View {
+    @Environment(\.theme) private var theme
+    let onBalanceTap: () -> Void
+    let onPlannedTap: () -> Void
+
+    var body: some View {
+        if theme.usesTiles {
+            TilesSummary(onBalanceTap: onBalanceTap, onPlannedTap: onPlannedTap)
+        } else {
+            ReceiptSummary(onBalanceTap: onBalanceTap, onPlannedTap: onPlannedTap)
+        }
+    }
+}
+
+/// Карточка-«чек»: сегодня, за месяц, прогноз, планируется, остаток.
+struct ReceiptSummary: View {
     @EnvironmentObject private var store: SpentStore
     @Environment(\.theme) private var theme
     /// Нажатие на «На карте» — установить баланс вручную.

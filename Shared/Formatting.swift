@@ -76,6 +76,13 @@ enum Fmt {
         return "\(n) \(word)"
     }
 
+    /// «↓ 12%» / «↑ 8%» / «0%».
+    static func percentBadge(_ value: Int) -> String {
+        if value > 0 { return "↑ \(value)%" }
+        if value < 0 { return "↓ \(-value)%" }
+        return "0%"
+    }
+
     /// Заголовок дня в истории: «Сегодня», «Вчера», «5 ноября».
     static func dayTitle(_ date: Date, now: Date = Date()) -> String {
         if calendar.isDate(date, inSameDayAs: now) { return "Сегодня" }

@@ -48,7 +48,7 @@ struct ChecksView: View {
                     Section {
                         ForEach(group.items) { tx in row(tx) }
                     } header: {
-                        sectionHeader(Fmt.dayTitle(group.day))
+                        dayHeader(group.day)
                     }
                 }
             }
@@ -113,6 +113,20 @@ struct ChecksView: View {
                 delete(tx)
             } label: {
                 Label("Удалить", systemImage: "trash")
+            }
+        }
+    }
+
+    private func dayHeader(_ day: Date) -> some View {
+        let total = store.data.expenseTotal(onDay: day)
+        return HStack {
+            sectionHeader(Fmt.dayTitle(day))
+            Spacer()
+            if total > 0 {
+                Text(Fmt.money(total))
+                    .font(theme.amountFont(.subheadline))
+                    .foregroundStyle(theme.ink)
+                    .textCase(nil)
             }
         }
     }

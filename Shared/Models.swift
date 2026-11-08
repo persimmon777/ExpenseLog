@@ -433,10 +433,11 @@ enum Merchant {
 
 // MARK: - Тема
 
-/// В первой версии — две темы. «Игровая» — второй этап.
+/// Темы оформления. «Игровая» — второй этап.
 enum ThemeID: String, CaseIterable, Identifiable, Codable {
     case receipt
     case card
+    case lavender
 
     var id: String { rawValue }
 
@@ -444,6 +445,7 @@ enum ThemeID: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .receipt: return "Чек"
         case .card: return "Карта"
+        case .lavender: return "Лаванда"
         }
     }
 }
