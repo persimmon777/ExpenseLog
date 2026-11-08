@@ -201,6 +201,8 @@ struct RecurringItem: Identifiable, Codable, Hashable {
     /// Магазин для самоопределения: ключ `Merchant.key` и как его написал пользователь.
     var merchantKey: String?
     var merchantName: String?
+    /// Допуск по сумме для самоопределения, % (по умолчанию 20).
+    var tolerancePercent: Int?
     /// Когда платёж последний раз нашёлся в операциях сам.
     var lastPaidDate: Date?
     var lastPaidTransactionID: UUID?

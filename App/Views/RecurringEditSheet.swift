@@ -16,6 +16,7 @@ struct RecurringEditSheet: View {
     @State private var categoryID: UUID?
     @State private var isActive: Bool
     @State private var merchant: String
+    @State private var tolerance: Int
     @State private var confirmDelete = false
 
     init(item: RecurringItem?) {
@@ -28,6 +29,7 @@ struct RecurringEditSheet: View {
         _categoryID = State(initialValue: item?.categoryID)
         _isActive = State(initialValue: item?.isActive ?? true)
         _merchant = State(initialValue: item?.merchantName ?? "")
+        _tolerance = State(initialValue: item?.tolerance ?? AppData.defaultTolerancePercent)
     }
 
     private var amount: Decimal? {
@@ -73,10 +75,20 @@ struct RecurringEditSheet: View {
                 if !isIncome {
                     Section {
                         MerchantField(name: $merchant)
+                        Picker("Допуск по сумме", selection: $tolerance) {
+                            ForEach([0, 5, 10, 15, 20, 25, 30, 40, 50, 100], id: \.self) { p in
+                                Text(p == 0 ? "точно" : "±\(p)%").tag(p)
+                            }
+                        }
+                        if let amount {
+                            Text("Подойдёт оплата от \(Fmt.money(amount * Decimal(100 - min(tolerance, 100)) / 100)) до \(Fmt.money(amount * Decimal(100 + tolerance) / 100))")
+                                .font(.caption)
+                                .foregroundStyle(theme.inkSoft)
+                        }
                     } header: {
                         Text("Отметить оплату само")
                     } footer: {
-                        Text("Когда придёт оплата в этом магазине на сумму ±20%, платёж отметится оплаченным: напоминание не придёт, трате проставится категория.")
+                        Text("Когда придёт оплата в этом магазине на сумму в пределах допуска, платёж отметится оплаченным: напоминание не придёт, трате проставится категория. Если сумма меняется (например, связь), поставьте допуск побольше.")
                     }
                 }
                 if original != nil {
@@ -124,6 +136,7 @@ struct RecurringEditSheet: View {
         let shop = merchant.trimmingCharacters(in: .whitespaces)
         item.merchantKey = isIncome ? nil : shop.merchantKeyOrNil
         item.merchantName = item.merchantKey == nil ? nil : shop
+        item.tolerancePercent = tolerance == AppData.defaultTolerancePercent ? nil : tolerance
         let saved = item
         store.mutate { $0.saveRecurring(saved) }
         dismiss()

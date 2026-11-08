@@ -26,6 +26,8 @@ struct TodayEntry: TimelineEntry {
     let canSpend: Decimal?
     /// Перенесено с прошлых дней.
     let carried: Decimal
+    /// Виджет видит общую папку с данными приложения.
+    let isShared: Bool
     let theme: Theme
 
     static let sample = TodayEntry(
@@ -36,7 +38,7 @@ struct TodayEntry: TimelineEntry {
             TopCategory(name: "Кафе", emoji: "☕️", colorHex: "F3A712", total: 6.6),
             TopCategory(name: "Транспорт", emoji: "🚌", colorHex: "00A6A6", total: 4.5)
         ],
-        dayPlan: 25, canSpend: 1.6, carried: 5, theme: .receipt
+        dayPlan: 25, canSpend: 1.6, carried: 5, isShared: true, theme: .receipt
     )
 }
 
@@ -68,7 +70,7 @@ struct TodayProvider: TimelineProvider {
             date: now, total: total, count: today.count,
             lastTitle: last.map { data.displayTitle(for: $0) }, lastAmount: last?.amount,
             top: Array(top), dayPlan: data.dayAllowance(now), canSpend: data.canSpendToday(now: now),
-            carried: data.carriedIntoToday(now: now), theme: Theme.current
+            carried: data.carriedIntoToday(now: now), isShared: AppGroup.isShared, theme: Theme.current
         )
     }
 }
