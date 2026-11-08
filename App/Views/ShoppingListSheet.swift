@@ -91,7 +91,13 @@ struct ShoppingListSheet: View {
                 .submitLabel(.next)
                 .onSubmit { focus = .price }
             TextField("≈ цена", text: $newPrice)
-                .keyboardType(.decimalPad)
+                // У цифровой клавиатуры нет кнопки «ввод» — эта раскладка с цифрами её имеет.
+                .keyboardType(.numbersAndPunctuation)
+                .submitLabel(.done)
+                .onSubmit {
+                    addItem()
+                    focus = .title
+                }
                 .multilineTextAlignment(.trailing)
                 .font(theme.amountFont(.body))
                 .frame(width: 90)
