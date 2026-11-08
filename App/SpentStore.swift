@@ -9,6 +9,7 @@ final class SpentStore: ObservableObject {
     @Published private(set) var data: AppData
 
     init() {
+        AppGroup.migrateLocalDataIfNeeded()
         data = DataFile.load()
     }
 

@@ -12,17 +12,23 @@ struct ChecksView: View {
     @State private var showPaste = false
     @State private var removed: Transaction?
     @State private var undoTask: Task<Void, Never>?
+    /// Показывать стрелку «наверх», когда карточка-чек ушла за верх экрана.
+    @State private var showScrollTop = false
 
     var body: some View {
         let uncategorized = store.data.uncategorized
         let history = store.data.historyByDay()
 
         NavigationStack {
+            ScrollViewReader { proxy in
             List {
                 SummaryCard(onBalanceTap: { showBalance = true }, onPlannedTap: { showShopping = true })
                     .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
+                    .id(Self.topID)
+                    .onAppear { withAnimation { showScrollTop = false } }
+                    .onDisappear { withAnimation { showScrollTop = true } }
 
                 if !uncategorized.isEmpty {
                     Section {
@@ -94,8 +100,30 @@ struct ChecksView: View {
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
+            .overlay(alignment: .bottomTrailing) {
+                if showScrollTop {
+                    Button {
+                        withAnimation { proxy.scrollTo(Self.topID, anchor: .top) }
+                    } label: {
+                        Image(systemName: "arrow.up")
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(theme.onAccent)
+                            .frame(width: 46, height: 46)
+                            .background(theme.accent, in: Circle())
+                            .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
+                    }
+                    .accessibilityLabel("Наверх")
+                    .padding(.trailing, 16)
+                    .padding(.bottom, removed == nil ? 16 : 76)
+                    .transition(.scale.combined(with: .opacity))
+                }
+            }
+            }
         }
     }
+
+    /// Якорь начала списка для стрелки «наверх».
+    private static let topID = "checks-top"
 
     // MARK: Части
 
