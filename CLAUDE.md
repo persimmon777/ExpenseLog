@@ -38,7 +38,7 @@
 | «Категории» (`CategoriesView`, `CategoryEditSheet` с лимитом и удалением, `LimitBar`, правила с удалением), «Долги» (`DebtsView`, `DebtEditSheet`, `ReturnDebtSheet`), `Shared/Limits.swift` (`LimitStatus`, `categorySpent`, `limitRunOutDate`, списки долгов), токен темы `warning` | ✅ готово (уведомления о лимитах и долгах — на шаге 7) |
 | Экран «Чеки» (`ChecksView`, `SummaryCard`, `TransactionRow`, `TransactionSheet`, `CategoryTile`, `DebtFormSheet`, `CategoryEditSheet`, `ManualTransactionSheet`, `PasteSMSSheet`, `UndoToast`), `Shared/Editing.swift` (история по дням, ручные операции, заметки, подсказка MCC) | ✅ готово |
 | `App/Views/SettingsView.swift` — пока тема и состояние App Group | ⚠️ частично |
-| `Widget/SpentWidget.swift` | ⚠️ **временный каркас** — заменить виджетом из раздела 9 |
+| Виджет `Widget/SpentWidget.swift` (провайдер, `TodayEntry`, топ-3 категорий, план на день) + `Widget/TodayWidgetView.swift` (small / medium / accessoryRectangular / accessoryInline, цвета из `Theme.current`; при смене темы/палитры — `reloadAllTimelines`) | ✅ готово, на телефоне не проверено |
 | Тема «Лаванда» (`TilesSummary`), свои цвета фона и основного цвета в каждой теме, суммы по дням в истории | ✅ готово |
 | Список покупок (`ShoppingListSheet`, `ShoppingItemEditSheet`, «Планируется» в чеке), баланс карты вручную (`BalanceSheet`), «Учитывать в расчёте трат», магазины (`MerchantsView`, `MerchantEditSheet`), режим разбора «Без категории» | ✅ готово |
 | App Intent `AddBankSMSIntent` + `SpentShortcuts` (`App/Intents/`), экран-инструкция `AutomationGuideView` (Настройки → «Автодобавление из SMS», последний запуск — `SharedSettings.recordAutoAdd`) | ✅ готово, на телефоне не проверено |
@@ -46,7 +46,6 @@
 | Импорт истории SMS из резервной копии iPhone / текстового файла (`ImportHistoryView`, `SMSHistoryImporter`, `SMSParser.extractMessages`, `applyMCCSuggestions`) | ✅ готово, на реальном файле не проверено |
 | Уведомления (`Shared/Notifications.swift`: `Notifier.refresh()` — пороги лимитов и плана недели → сразу, `weekly-summary` → ближайшее вс 20:00, `debt-<id>` → день возврата 10:00; `collectLimitAlerts`, `weeklySummaryText`; `NotificationDelegate` показывает и при открытом приложении; `NotificationSettingsView` с переключателями и «Проверить уведомление»). Вызывается после `mutate`, при открытии приложения и в App Intent | ✅ готово |
 | Резервная копия (`Shared/Backup.swift`: закладка папки, `runIfNeeded` не чаще раза в 60 с, `Spent-yyyy-MM-dd_HH-mm.json`, последние 10; `BackupView` в Настройках: выбор папки через `fileImporter([.folder])`, «Сделать копию сейчас», «Восстановить из копии» с подтверждением, экспорт файла через `ShareLink`; `DataFile.encode` / `decodeBackup`). Вызывается после `mutate`, при открытии и в App Intent (если добавлено) | ✅ готово, на телефоне не проверено |
-| Виджет (раздел 9) | ⏳ не начато |
 
 **Порядок дальнейшей работы:**
 1. Первая сборка в CI → убедиться, что `.ipa` собирается и ставится через SideStore, диагностический экран показывает «Общая папка: работает».

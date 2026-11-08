@@ -1,4 +1,5 @@
 import SwiftUI
+import WidgetKit
 
 /// «Оформление»: тема и одна из готовых палитр для неё.
 struct ThemeSettingsView: View {
@@ -25,6 +26,7 @@ struct ThemeSettingsView: View {
                         let preview = Theme.forID(id, palettes: chosen)
                         Button {
                             withAnimation { themeRaw = id.rawValue }
+                            WidgetCenter.shared.reloadAllTimelines()
                         } label: {
                             ThemePreviewTile(preview: preview, title: id.title, isSelected: id == selectedTheme)
                         }
@@ -62,6 +64,7 @@ struct ThemeSettingsView: View {
         var dict = ThemePalettes.decode(themePalettesRaw)
         dict[id.rawValue] = palette.id
         withAnimation { themePalettesRaw = ThemePalettes.encode(dict) }
+        WidgetCenter.shared.reloadAllTimelines()
     }
 }
 
