@@ -2,23 +2,24 @@ import SwiftUI
 
 /// Оформление. Все цвета и формы во вью — только отсюда (через `@Environment(\.theme)`).
 ///
-/// В каждой теме пользователь может заменить цвет фона и основной цвет (акцент) —
-/// см. `Theme.forID(_:overrides:)` и `SharedSettings.Key.themeColors`.
+/// У каждой темы есть несколько готовых палитр (`ThemePalette`): фон, карточки и основной цвет
+/// подобраны так, чтобы текст темы оставался читабельным. Выбор хранится в
+/// `SharedSettings.Key.themePalettes` (см. `ThemePalettes`).
 struct Theme {
     let id: ThemeID
-    /// Фон экрана («прилавок»). Может быть заменён пользователем.
+    /// Фон экрана («прилавок»). Задаётся палитрой.
     var background: Color
-    /// Карточки.
-    let paper: Color
+    /// Карточки. Задаётся палитрой.
+    var paper: Color
     /// Основной текст.
     let ink: Color
     /// Вторичный текст.
     let inkSoft: Color
     /// Разделители.
     let rule: Color
-    /// Основной цвет. Может быть заменён пользователем.
+    /// Основной цвет. Задаётся палитрой.
     var accent: Color
-    /// Текст поверх основного цвета (на большой карточке «Сегодня» в «Лаванде»).
+    /// Текст поверх основного цвета (большая карточка «Сегодня» в «Лаванде», кнопки).
     let onAccent: Color
     let positive: Color
     let danger: Color
@@ -30,9 +31,6 @@ struct Theme {
     /// Шрифт сумм.
     let amountDesign: Font.Design
     let colorScheme: ColorScheme
-    /// Исходные цвета темы — для «Сбросить» в настройках.
-    let defaultBackgroundHex: String
-    let defaultAccentHex: String
 
     static let receipt = Theme(
         id: .receipt,
@@ -49,9 +47,7 @@ struct Theme {
         usesTiles: false,
         cornerRadius: 2,
         amountDesign: .monospaced,
-        colorScheme: .light,
-        defaultBackgroundHex: "E4E2DA",
-        defaultAccentHex: "5B3CC4"
+        colorScheme: .light
     )
 
     static let card = Theme(
@@ -69,9 +65,7 @@ struct Theme {
         usesTiles: false,
         cornerRadius: 18,
         amountDesign: .rounded,
-        colorScheme: .dark,
-        defaultBackgroundHex: "0F1114",
-        defaultAccentHex: "A08CFF"
+        colorScheme: .dark
     )
 
     static let lavender = Theme(
@@ -89,28 +83,27 @@ struct Theme {
         usesTiles: true,
         cornerRadius: 20,
         amountDesign: .default,
-        colorScheme: .light,
-        defaultBackgroundHex: "F8F7FD",
-        defaultAccentHex: "8B74F0"
+        colorScheme: .light
     )
 
-    /// Тема с учётом цветов, выбранных пользователем.
-    /// `overrides` — словарь «<themeID>.background» / «<themeID>.accent» → hex.
-    static func forID(_ id: ThemeID, overrides: [String: String] = [:]) -> Theme {
+    /// Тема с выбранной палитрой. `palettes` — «themeID → id палитры».
+    static func forID(_ id: ThemeID, palettes: [String: String] = [:]) -> Theme {
         var theme: Theme
         switch id {
         case .receipt: theme = .receipt
         case .card: theme = .card
         case .lavender: theme = .lavender
         }
-        if let hex = overrides[ThemeColors.key(id, .background)] { theme.background = Color(hex: hex) }
-        if let hex = overrides[ThemeColors.key(id, .accent)] { theme.accent = Color(hex: hex) }
+        let palette = id.palette(withID: palettes[id.rawValue])
+        theme.background = Color(hex: palette.background)
+        theme.paper = Color(hex: palette.paper)
+        theme.accent = Color(hex: palette.accent)
         return theme
     }
 
     /// Текущая тема из общих настроек (для виджета и App Intent).
     static var current: Theme {
-        forID(SharedSettings.themeID, overrides: ThemeColors.decode(AppGroup.defaults.string(forKey: SharedSettings.Key.themeColors) ?? ""))
+        forID(SharedSettings.themeID, palettes: ThemePalettes.decode(AppGroup.defaults.string(forKey: SharedSettings.Key.themePalettes) ?? ""))
     }
 
     /// Шрифт сумм.
@@ -127,16 +120,60 @@ struct Theme {
     var cardBottomInset: CGFloat { isReceipt ? ReceiptShape.defaultToothHeight : 0 }
 }
 
-/// Свои цвета тем: хранятся одной строкой JSON в `SharedSettings.Key.themeColors`.
-enum ThemeColors {
-    enum Slot: String {
-        case background, accent
+// MARK: - Палитры
+
+/// Готовое сочетание цветов для темы. Текст темы (`ink`, `inkSoft`) на нём читается.
+struct ThemePalette: Identifiable {
+    let id: String
+    let name: String
+    let background: String
+    let paper: String
+    let accent: String
+}
+
+extension ThemeID {
+    /// 6 палитр для каждой темы; первая — исходная.
+    var palettes: [ThemePalette] {
+        switch self {
+        case .receipt:
+            return [
+                ThemePalette(id: "thermal", name: "Термобумага", background: "E4E2DA", paper: "FBFAF6", accent: "5B3CC4"),
+                ThemePalette(id: "mint", name: "Мята", background: "DCE8E1", paper: "F9FCFA", accent: "1F7A5A"),
+                ThemePalette(id: "powder", name: "Пудра", background: "EADFDC", paper: "FDF9F8", accent: "B23A5B"),
+                ThemePalette(id: "sky", name: "Небо", background: "DDE4EC", paper: "F9FBFD", accent: "2F5FA8"),
+                ThemePalette(id: "sand", name: "Песок", background: "E9E0CF", paper: "FFFBF2", accent: "A0522D"),
+                ThemePalette(id: "pencil", name: "Карандаш", background: "D9D9D9", paper: "FAFAFA", accent: "2B2B2B")
+            ]
+        case .card:
+            return [
+                ThemePalette(id: "graphite", name: "Графит", background: "0F1114", paper: "1A1D22", accent: "A08CFF"),
+                ThemePalette(id: "night", name: "Ночь", background: "0B1220", paper: "152033", accent: "5FA8FF"),
+                ThemePalette(id: "emerald", name: "Изумруд", background: "0C1412", paper: "16221F", accent: "4FD1A5"),
+                ThemePalette(id: "cherry", name: "Вишня", background: "160E12", paper: "24171D", accent: "FF7AA2"),
+                ThemePalette(id: "amber", name: "Янтарь", background: "14110C", paper: "221D15", accent: "FFB547"),
+                ThemePalette(id: "ocean", name: "Океан", background: "0A1416", paper: "132225", accent: "3FD0D4")
+            ]
+        case .lavender:
+            return [
+                ThemePalette(id: "lavender", name: "Лаванда", background: "F8F7FD", paper: "EEEAFB", accent: "8B74F0"),
+                ThemePalette(id: "mint", name: "Мята", background: "F5FAF8", paper: "E3F3EC", accent: "2A9A71"),
+                ThemePalette(id: "peach", name: "Персик", background: "FFF8F4", paper: "FDE8DC", accent: "E8703F"),
+                ThemePalette(id: "sky", name: "Небо", background: "F5F8FD", paper: "E3ECFA", accent: "4A7FE0"),
+                ThemePalette(id: "rose", name: "Роза", background: "FDF6F8", paper: "F9E3EA", accent: "DB4F78"),
+                ThemePalette(id: "lagoon", name: "Лагуна", background: "F4FBFB", paper: "DDF2F2", accent: "1A969A")
+            ]
+        }
     }
 
-    static func key(_ id: ThemeID, _ slot: Slot) -> String {
-        "\(id.rawValue).\(slot.rawValue)"
+    /// Палитра по id; неизвестный id или `nil` — исходная.
+    func palette(withID id: String?) -> ThemePalette {
+        let all = palettes
+        return all.first { $0.id == id } ?? all[0]
     }
+}
 
+/// Выбранные палитры тем: JSON «themeID → id палитры» в `SharedSettings.Key.themePalettes`.
+enum ThemePalettes {
     static func decode(_ raw: String) -> [String: String] {
         guard let data = raw.data(using: .utf8),
               let dict = try? JSONDecoder().decode([String: String].self, from: data) else { return [:] }

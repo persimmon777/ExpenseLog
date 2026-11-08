@@ -9,6 +9,8 @@ struct ShoppingListSheet: View {
     @State private var newTitle = ""
     @State private var newPrice = ""
     @State private var editing: ShoppingItem?
+    /// Открыта строка добавления (по «+» рядом с «Купить»).
+    @State private var isAdding = false
     @FocusState private var focus: Field?
 
     private enum Field {
@@ -32,16 +34,30 @@ struct ShoppingListSheet: View {
                 }
 
                 Section {
-                    addRow
-                        .listRowBackground(theme.paper)
+                    if isAdding {
+                        addRow
+                            .listRowBackground(theme.paper)
+                    }
                     ForEach(toBuy) { item in
                         itemRow(item)
                     }
                 } header: {
-                    header("Купить")
+                    HStack {
+                        header("Купить")
+                        Spacer()
+                        Button {
+                            startAdding()
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title2)
+                                .foregroundStyle(theme.accent)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Добавить покупку")
+                    }
                 } footer: {
-                    if toBuy.isEmpty {
-                        Text("Добавьте, что собираетесь купить, и примерную цену — сумма появится в чеке на главной.")
+                    if toBuy.isEmpty && !isAdding {
+                        Text("Нажмите «+», чтобы добавить, что собираетесь купить, и примерную цену — сумма появится на главной.")
                             .foregroundStyle(theme.inkSoft)
                     }
                 }
@@ -84,35 +100,46 @@ struct ShoppingListSheet: View {
 
     // MARK: Части
 
+    /// Строка добавления: кружок, название, цена в «пилюле», крестик «отменить».
     private var addRow: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
+            Image(systemName: "circle")
+                .font(.title3)
+                .foregroundStyle(theme.rule)
             TextField("Что купить", text: $newTitle)
+                .foregroundStyle(theme.ink)
                 .focused($focus, equals: .title)
                 .submitLabel(.next)
                 .onSubmit { focus = .price }
-            TextField("≈ цена", text: $newPrice)
-                // У цифровой клавиатуры нет кнопки «ввод» — эта раскладка с цифрами её имеет.
-                .keyboardType(.numbersAndPunctuation)
-                .submitLabel(.done)
-                .onSubmit {
-                    addItem()
-                    focus = .title
-                }
-                .multilineTextAlignment(.trailing)
-                .font(theme.amountFont(.body))
-                .frame(width: 90)
-                .focused($focus, equals: .price)
+            HStack(spacing: 2) {
+                Text("≈")
+                    .foregroundStyle(theme.inkSoft)
+                TextField("цена", text: $newPrice)
+                    // У цифровой клавиатуры нет кнопки «ввод» — эта раскладка с цифрами её имеет.
+                    .keyboardType(.numbersAndPunctuation)
+                    .submitLabel(.done)
+                    .multilineTextAlignment(.trailing)
+                    .font(theme.amountFont(.body))
+                    .foregroundStyle(theme.ink)
+                    .focused($focus, equals: .price)
+                    .onSubmit {
+                        addItem()
+                        focus = .title
+                    }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .frame(width: 96)
+            .background(theme.background, in: Capsule())
             Button {
-                addItem()
-                focus = .title
+                cancelAdding()
             } label: {
-                Image(systemName: "plus.circle.fill")
-                    .font(.title2)
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title3)
+                    .foregroundStyle(theme.inkSoft)
             }
             .buttonStyle(.plain)
-            .foregroundStyle(theme.accent)
-            .disabled(newTitle.trimmingCharacters(in: .whitespaces).isEmpty)
-            .accessibilityLabel("Добавить в список")
+            .accessibilityLabel("Отменить")
         }
     }
 
@@ -164,6 +191,19 @@ struct ShoppingListSheet: View {
     }
 
     // MARK: Действия
+
+    private func startAdding() {
+        withAnimation { isAdding = true }
+        // Поле появляется с анимацией — фокус ставим, когда оно уже на экране.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { focus = .title }
+    }
+
+    private func cancelAdding() {
+        newTitle = ""
+        newPrice = ""
+        focus = nil
+        withAnimation { isAdding = false }
+    }
 
     private func addItem() {
         let title = newTitle.trimmingCharacters(in: .whitespaces)
