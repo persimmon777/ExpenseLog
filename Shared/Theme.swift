@@ -11,18 +11,18 @@ struct Theme {
     var background: Color
     /// Карточки. Задаётся палитрой.
     var paper: Color
-    /// Основной текст.
-    let ink: Color
+    /// Основной текст. Светлая палитра тёмной темы может заменить.
+    var ink: Color
     /// Вторичный текст.
-    let inkSoft: Color
+    var inkSoft: Color
     /// Разделители.
-    let rule: Color
+    var rule: Color
     /// Основной цвет. Задаётся палитрой.
     var accent: Color
     /// Текст поверх основного цвета (большая карточка «Сегодня» в «Лаванде», кнопки).
-    let onAccent: Color
-    let positive: Color
-    let danger: Color
+    var onAccent: Color
+    var positive: Color
+    var danger: Color
     /// Рваный зубчатый край снизу у карточек и пунктирные разделители («Чек»).
     let isReceipt: Bool
     /// Главная в виде плиток: большая карточка «Сегодня» + сетка 2×2 («Лаванда»).
@@ -30,7 +30,7 @@ struct Theme {
     let cornerRadius: CGFloat
     /// Шрифт сумм.
     let amountDesign: Font.Design
-    let colorScheme: ColorScheme
+    var colorScheme: ColorScheme
 
     static let receipt = Theme(
         id: .receipt,
@@ -98,6 +98,15 @@ struct Theme {
         theme.background = Color(hex: palette.background)
         theme.paper = Color(hex: palette.paper)
         theme.accent = Color(hex: palette.accent)
+        if let light = palette.light {
+            theme.ink = Color(hex: light.ink)
+            theme.inkSoft = Color(hex: light.inkSoft)
+            theme.rule = Color(hex: light.rule)
+            theme.onAccent = Color(hex: light.onAccent)
+            theme.positive = Color(hex: light.positive)
+            theme.danger = Color(hex: light.danger)
+            theme.colorScheme = .light
+        }
         return theme
     }
 
@@ -123,12 +132,24 @@ struct Theme {
 // MARK: - Палитры
 
 /// Готовое сочетание цветов для темы. Текст темы (`ink`, `inkSoft`) на нём читается.
+/// Светлая палитра тёмной темы («Карта») задаёт ещё и тёмный текст — `light`.
 struct ThemePalette: Identifiable {
     let id: String
     let name: String
     let background: String
     let paper: String
     let accent: String
+    var light: LightColors? = nil
+
+    /// Цвета текста и состояний для светлого варианта тёмной темы.
+    struct LightColors {
+        let ink: String
+        let inkSoft: String
+        let rule: String
+        let onAccent: String
+        let positive: String
+        let danger: String
+    }
 }
 
 extension ThemeID {
@@ -146,18 +167,21 @@ extension ThemeID {
             ]
         case .card:
             return [
-                ThemePalette(id: "graphite", name: "Графит", background: "0F1114", paper: "1A1D22", accent: "A08CFF"),
                 ThemePalette(id: "night", name: "Ночь", background: "0B1220", paper: "152033", accent: "5FA8FF"),
-                ThemePalette(id: "emerald", name: "Изумруд", background: "0C1412", paper: "16221F", accent: "4FD1A5"),
+                ThemePalette(id: "morning", name: "Утро", background: "EEF2F8", paper: "FFFFFF", accent: "2563C9",
+                             light: ThemePalette.LightColors(ink: "141A24", inkSoft: "5E6878", rule: "D8DEE8", onAccent: "FFFFFF", positive: "1E8A4F", danger: "D23B3B")),
                 ThemePalette(id: "cherry", name: "Вишня", background: "160E12", paper: "24171D", accent: "FF7AA2"),
-                ThemePalette(id: "amber", name: "Янтарь", background: "14110C", paper: "221D15", accent: "FFB547"),
-                ThemePalette(id: "ocean", name: "Океан", background: "0A1416", paper: "132225", accent: "3FD0D4")
+                ThemePalette(id: "sakura", name: "Сакура", background: "F8EFF2", paper: "FFFFFF", accent: "C2416B",
+                             light: ThemePalette.LightColors(ink: "24161B", inkSoft: "76606A", rule: "EBD9DF", onAccent: "FFFFFF", positive: "1E8A4F", danger: "C62828")),
+                ThemePalette(id: "emerald", name: "Изумруд", background: "0C1412", paper: "16221F", accent: "4FD1A5"),
+                ThemePalette(id: "jade", name: "Нефрит", background: "ECF4F1", paper: "FFFFFF", accent: "1B8A68",
+                             light: ThemePalette.LightColors(ink: "13201C", inkSoft: "5B6E68", rule: "D5E4DF", onAccent: "FFFFFF", positive: "1B8A4A", danger: "D23B3B"))
             ]
         case .lavender:
             return [
                 ThemePalette(id: "lavender", name: "Лаванда", background: "F8F7FD", paper: "EEEAFB", accent: "8B74F0"),
                 ThemePalette(id: "mint", name: "Мята", background: "F5FAF8", paper: "E3F3EC", accent: "2A9A71"),
-                ThemePalette(id: "peach", name: "Персик", background: "FFF8F4", paper: "FDE8DC", accent: "E8703F"),
+                ThemePalette(id: "peach", name: "Хурма", background: "FFF8F4", paper: "FDE8DC", accent: "E8703F"),
                 ThemePalette(id: "sky", name: "Небо", background: "F5F8FD", paper: "E3ECFA", accent: "4A7FE0"),
                 ThemePalette(id: "rose", name: "Роза", background: "FDF6F8", paper: "F9E3EA", accent: "DB4F78"),
                 ThemePalette(id: "lagoon", name: "Лагуна", background: "F4FBFB", paper: "DDF2F2", accent: "1A969A")
