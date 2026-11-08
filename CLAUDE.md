@@ -76,7 +76,7 @@ struct AddBankSMSIntent: AppIntent {
     static var title: LocalizedStringResource = "Добавить SMS банка"
     static var description = IntentDescription("Разбирает SMS о списании, пополнении или снятии наличных и добавляет операцию в Spent.")
     static var openAppWhenRun = false
-    @Parameter(title: "Текст SMS") var text: String
+    @Parameter(title: "Текст SMS") var text: String?   // необязательный: без связи с «Ввод быстрой команды» не всплывает окно, пишется подсказка в «Проверку»
     func perform() async throws -> some IntentResult & ReturnsValue<String>
 }
 struct SpentShortcuts: AppShortcutsProvider { /* фраза: "Добавить SMS в \(.applicationName)" */ }
