@@ -1,0 +1,153 @@
+import WidgetKit
+import SwiftUI
+
+/// Вид виджета для каждого размера.
+struct TodayWidgetView: View {
+    @Environment(\.widgetFamily) private var family
+    let entry: TodayEntry
+
+    private var theme: Theme { entry.theme }
+
+    var body: some View {
+        content
+            .containerBackground(for: .widget) {
+                if isAccessory {
+                    Color.clear
+                } else {
+                    theme.paper
+                }
+            }
+    }
+
+    private var isAccessory: Bool {
+        family == .accessoryRectangular || family == .accessoryInline || family == .accessoryCircular
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch family {
+        case .systemMedium:
+            HStack(spacing: 14) {
+                todayColumn
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                topColumn
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        case .accessoryRectangular:
+            rectangular
+        case .accessoryInline:
+            Text("Spent: \(Fmt.money(entry.total))")
+        default:
+            todayColumn
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+    }
+
+    // MARK: Домашний экран
+
+    private var todayColumn: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Сегодня")
+                .font(.caption)
+                .foregroundStyle(theme.inkSoft)
+            Text(Fmt.money(entry.total))
+                .font(theme.amountFont(.title2, weight: .bold))
+                .foregroundStyle(theme.ink)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+            if let plan = entry.dayPlan, plan > 0 {
+                bar(ratio: ratio(entry.total, plan), color: entry.total > plan ? theme.danger : theme.accent)
+                Text("из \(Fmt.money(plan))")
+                    .font(.caption2)
+                    .foregroundStyle(theme.inkSoft)
+                    .lineLimit(1)
+            }
+            Text(Fmt.plural(entry.count, "покупка", "покупки", "покупок"))
+                .font(.caption2)
+                .foregroundStyle(theme.inkSoft)
+            Spacer(minLength: 0)
+            if let title = entry.lastTitle, let amount = entry.lastAmount {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(title)
+                        .font(.caption)
+                        .foregroundStyle(theme.ink)
+                        .lineLimit(1)
+                    Text("−" + Fmt.money(amount))
+                        .font(theme.amountFont(.caption2))
+                        .foregroundStyle(theme.inkSoft)
+                        .lineLimit(1)
+                }
+            }
+        }
+    }
+
+    private var topColumn: some View {
+        let maxTotal = entry.top.map(\.total).max() ?? 0
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("Больше всего")
+                .font(.caption)
+                .foregroundStyle(theme.inkSoft)
+            if entry.top.isEmpty {
+                Text("Покупок сегодня нет")
+                    .font(.caption)
+                    .foregroundStyle(theme.inkSoft)
+            }
+            ForEach(entry.top) { item in
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 4) {
+                        Text("\(item.emoji) \(item.name)")
+                            .font(.caption2)
+                            .foregroundStyle(theme.ink)
+                            .lineLimit(1)
+                        Spacer(minLength: 2)
+                        Text(Fmt.money(item.total))
+                            .font(theme.amountFont(.caption2))
+                            .foregroundStyle(theme.ink)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                    }
+                    bar(ratio: ratio(item.total, maxTotal), color: item.colorHex.map { Color(hex: $0) } ?? theme.inkSoft)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    // MARK: Экран блокировки
+
+    private var rectangular: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Сегодня: \(Fmt.money(entry.total))")
+                .font(.headline)
+                .widgetAccentable()
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+            Text(Fmt.plural(entry.count, "покупка", "покупки", "покупок"))
+                .font(.caption)
+            if let plan = entry.dayPlan, plan > 0 {
+                ProgressView(value: min(ratio(entry.total, plan), 1))
+                    .tint(.primary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: Части
+
+    private func bar(ratio: Double, color: Color) -> some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(theme.rule)
+                Capsule()
+                    .fill(color)
+                    .frame(width: geo.size.width * CGFloat(min(max(ratio, 0), 1)))
+            }
+        }
+        .frame(height: 5)
+    }
+
+    private func ratio(_ value: Decimal, _ total: Decimal) -> Double {
+        guard total > 0 else { return 0 }
+        return NSDecimalNumber(decimal: value / total).doubleValue
+    }
+}
