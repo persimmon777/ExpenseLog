@@ -27,6 +27,11 @@ struct SettingsView: View {
                         LabeledContent("План трат", value: store.data.currentBasePlan.map { "\(Fmt.money($0)) в неделю" } ?? "не задан")
                     }
                     NavigationLink {
+                        NotificationSettingsView()
+                    } label: {
+                        Text("Уведомления")
+                    }
+                    NavigationLink {
                         AutomationGuideView()
                     } label: {
                         LabeledContent("Автодобавление из SMS", value: SharedSettings.lastAutoAdd == nil ? "не настроено" : "работает")

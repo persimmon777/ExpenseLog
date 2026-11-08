@@ -28,8 +28,15 @@ final class SpentStore: ObservableObject {
 
     /// Что делать после любого изменения данных.
     /// Порядок по CLAUDE.md: лимиты → weekly-summary → резервная копия → виджет.
-    /// Лимиты, сводка и копия появятся на своих шагах.
+    /// Резервная копия появится на своём шаге.
     private func afterChange() {
         WidgetCenter.shared.reloadAllTimelines()
+        Task { await Notifier.refresh() }
+    }
+
+    /// При открытии приложения: перечитать файл и пересчитать уведомления.
+    func becameActive() {
+        reload()
+        Task { await Notifier.refresh() }
     }
 }
