@@ -8,15 +8,22 @@ struct AddBankSMSIntent: AppIntent {
     static var description = IntentDescription("Разбирает SMS о списании, пополнении или снятии наличных и добавляет операцию в Spent.")
     static var openAppWhenRun = false
 
+    /// Необязательный: если в автоматизации поле не связано с «Ввод быстрой команды → Содержимое»,
+    /// «Команды» не будут спрашивать текст окном — действие просто запишет подсказку в «Проверку».
     @Parameter(title: "Текст SMS")
-    var text: String
+    var text: String?
 
     static var parameterSummary: some ParameterSummary {
         Summary("Добавить в Spent: \(\.$text)")
     }
 
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
-        let input = text
+        let input = text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !input.isEmpty else {
+            let hint = "Текст SMS не передан. В автоматизации нажмите на поле «Текст SMS» и выберите «Ввод быстрой команды», затем «Содержимое»."
+            SharedSettings.recordAutoAdd(hint)
+            return .result(value: hint)
+        }
         var result = AppData.IngestResult()
         DataFile.update { data in
             result = data.ingest(smsText: input)
