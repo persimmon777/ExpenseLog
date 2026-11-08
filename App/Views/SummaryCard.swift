@@ -4,6 +4,8 @@ import SwiftUI
 struct SummaryCard: View {
     @EnvironmentObject private var store: SpentStore
     @Environment(\.theme) private var theme
+    /// Нажатие на «На карте» — установить баланс вручную.
+    let onBalanceTap: () -> Void
 
     var body: some View {
         let data = store.data
@@ -16,8 +18,25 @@ struct SummaryCard: View {
                 RuleLine()
                 AmountRow(title: "За месяц", value: Fmt.money(data.expenseTotal(in: .month)))
                 AmountRow(title: "Прогноз на месяц", value: Fmt.money(data.monthForecast()))
-                AmountRow(title: "На карте", value: data.lastBalance.map { Fmt.money($0) } ?? "—")
+                Button(action: onBalanceTap) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        AmountRow(title: "На карте", value: data.lastBalance.map { Fmt.money($0) } ?? "указать")
+                        Text(balanceCaption(data))
+                            .font(.caption2)
+                            .foregroundStyle(theme.inkSoft)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
         }
+    }
+
+    private func balanceCaption(_ data: AppData) -> String {
+        guard data.lastBalance != nil, let date = data.lastBalanceDate else {
+            return "Нажмите, чтобы указать остаток на карте"
+        }
+        let source = data.balanceSetManually ? "указан вручную" : "из SMS"
+        return "\(source), \(Fmt.dayTitle(date).lowercased()) в \(Fmt.time(date)) · нажмите, чтобы изменить"
     }
 }

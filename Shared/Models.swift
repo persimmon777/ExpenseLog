@@ -70,8 +70,18 @@ struct Transaction: Identifiable, Codable, Hashable {
     var smsFingerprint: String?
     /// Связанный долг (для `.debtGiven` и `.debtReturn`).
     var debtID: UUID?
+    /// `true` — трата не учитывается в итогах, категориях и лимитах
+    /// (например, заплатил за родителей). Остаётся в истории.
+    var excludedFromTotals: Bool?
 
-    var isUncategorized: Bool { kind == .expense && categoryID == nil }
+    /// Не учитывать в расчёте трат.
+    var isExcluded: Bool { excludedFromTotals == true }
+
+    /// Учитывать в расходах: тип «трата» и не исключена вручную.
+    /// Везде, где считаются расходы, — этот фильтр.
+    var countsAsExpense: Bool { kind.countsAsExpense && !isExcluded }
+
+    var isUncategorized: Bool { kind == .expense && categoryID == nil && !isExcluded }
 }
 
 // MARK: - Категория
@@ -158,6 +168,10 @@ struct AppData: Codable {
     var limitAlertsSent: [String: Int] = [:]
     var lastBalance: Decimal?
     var lastBalanceDate: Date?
+    /// Остаток указан вручную (а не взят из SMS).
+    var balanceSetManually = false
+    /// Свои названия магазинов: ключ `Merchant.key` → название.
+    var merchantNames: [String: String] = [:]
 
     init() {}
 
@@ -166,6 +180,7 @@ struct AppData: Codable {
     enum CodingKeys: String, CodingKey {
         case schemaVersion, transactions, categories, rules, debts
         case deletedFingerprints, limitAlertsSent, lastBalance, lastBalanceDate
+        case balanceSetManually, merchantNames
     }
 
     init(from decoder: Decoder) throws {
@@ -179,6 +194,8 @@ struct AppData: Codable {
         limitAlertsSent = try c.decodeIfPresent([String: Int].self, forKey: .limitAlertsSent) ?? [:]
         lastBalance = try c.decodeIfPresent(Decimal.self, forKey: .lastBalance)
         lastBalanceDate = try c.decodeIfPresent(Date.self, forKey: .lastBalanceDate)
+        balanceSetManually = try c.decodeIfPresent(Bool.self, forKey: .balanceSetManually) ?? false
+        merchantNames = try c.decodeIfPresent([String: String].self, forKey: .merchantNames) ?? [:]
         schemaVersion = AppData.currentSchemaVersion
     }
 
@@ -263,6 +280,7 @@ struct AppData: Codable {
             if let balance = sms.balance, lastBalanceDate.map({ tx.date >= $0 }) ?? true {
                 lastBalance = balance
                 lastBalanceDate = tx.date
+                balanceSetManually = false
             }
         }
         return result

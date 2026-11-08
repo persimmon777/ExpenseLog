@@ -1,25 +1,39 @@
 import SwiftUI
 
-/// Лист операции: выбор категории, тип, заметка (CLAUDE.md, 5.1).
+/// Лист операции: выбор категории, тип, «учитывать в расчёте», заметка (CLAUDE.md, 5.1).
+///
+/// Два режима:
+/// - из истории — после выбора категории лист остаётся открытым, закрывает «Готово»;
+/// - из «Без категории» (`sortingQueue`) — после выбора сразу открывается следующая
+///   неотсортированная покупка, чтобы быстро разнести всё в конце дня.
 struct TransactionSheet: View {
-    let transactionID: UUID
+    let sortingQueue: Bool
 
     @EnvironmentObject private var store: SpentStore
     @Environment(\.theme) private var theme
     @Environment(\.dismiss) private var dismiss
 
+    @State private var currentID: UUID
     @State private var alwaysUseRule = false
     @State private var note = ""
     @State private var noteLoaded = false
     @State private var showDebtForm = false
     @State private var showNewCategory = false
+    @State private var showRename = false
+    /// Подпись «Кафе ✓» после выбора в режиме разбора.
+    @State private var lastChoice: String?
 
-    private let columns = [GridItem(.adaptive(minimum: 100), spacing: 10)]
+    private static let columns = [GridItem(.adaptive(minimum: 100), spacing: 10)]
+
+    init(transactionID: UUID, sortingQueue: Bool = false) {
+        self.sortingQueue = sortingQueue
+        _currentID = State(initialValue: transactionID)
+    }
 
     var body: some View {
         NavigationStack {
             Group {
-                if let tx = store.data.transaction(transactionID) {
+                if let tx = store.data.transaction(currentID) {
                     content(tx)
                 } else {
                     Text("Операция удалена")
@@ -28,7 +42,7 @@ struct TransactionSheet: View {
                 }
             }
             .background(theme.background.ignoresSafeArea())
-            .navigationTitle("Операция")
+            .navigationTitle(sortingQueue ? "Разбор покупок" : "Операция")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -38,11 +52,10 @@ struct TransactionSheet: View {
         }
         .onAppear {
             guard !noteLoaded else { return }
-            note = store.data.transaction(transactionID)?.note ?? ""
-            noteLoaded = true
+            loadNote()
         }
         .sheet(isPresented: $showDebtForm) {
-            DebtFormSheet(transactionID: transactionID) { dismiss() }
+            DebtFormSheet(transactionID: currentID) { afterAction(closeOutsideQueue: true) }
                 .environmentObject(store)
                 .environment(\.theme, theme)
         }
@@ -52,6 +65,13 @@ struct TransactionSheet: View {
             }
             .environment(\.theme, theme)
         }
+        .sheet(isPresented: $showRename) {
+            if let tx = store.data.transaction(currentID) {
+                MerchantEditSheet(merchant: tx.merchant)
+                    .environmentObject(store)
+                    .environment(\.theme, theme)
+            }
+        }
     }
 
     // MARK: Содержимое
@@ -59,6 +79,10 @@ struct TransactionSheet: View {
     private func content(_ tx: Transaction) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
+                if sortingQueue {
+                    queueStatus
+                }
+
                 header(tx)
 
                 if tx.kind == .debtGiven || tx.kind == .debtReturn {
@@ -70,6 +94,7 @@ struct TransactionSheet: View {
                     kindPicker(tx)
                     if tx.kind == .expense {
                         categoryGrid(tx)
+                        excludeToggle(tx)
                     }
                     actionButtons(tx)
                 }
@@ -80,17 +105,40 @@ struct TransactionSheet: View {
         }
     }
 
+    private var queueStatus: some View {
+        let left = store.data.uncategorized.count
+        return HStack {
+            Text(left > 0 ? "Осталось без категории: \(left)" : "Все покупки разобраны")
+                .font(.subheadline)
+                .foregroundStyle(theme.inkSoft)
+            Spacer()
+            if let lastChoice {
+                Text(lastChoice)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(theme.positive)
+            }
+        }
+    }
+
     private func header(_ tx: Transaction) -> some View {
-        PaperCard {
+        let title = store.data.displayTitle(for: tx)
+        return PaperCard {
             VStack(alignment: .leading, spacing: 6) {
                 Text(Fmt.signedMoney(tx.amount, outgoing: tx.kind.isOutgoing, currency: tx.currency))
                     .font(theme.amountFont(.largeTitle, weight: .bold))
                     .foregroundStyle(tx.kind.isOutgoing ? theme.ink : theme.positive)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
-                Text(tx.title)
-                    .font(.headline)
-                if let raw = tx.merchantRaw, raw != tx.title {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(title)
+                        .font(.headline)
+                    Spacer(minLength: 8)
+                    if tx.placeSubtitle == nil && !Merchant.key(tx.merchant).isEmpty {
+                        Button("Переименовать") { showRename = true }
+                            .font(.caption)
+                    }
+                }
+                if let raw = tx.merchantRaw, raw != title {
                     Text(raw)
                         .font(.caption)
                         .foregroundStyle(theme.inkSoft)
@@ -137,7 +185,7 @@ struct TransactionSheet: View {
                         .foregroundStyle(theme.accent)
                 }
             }
-            LazyVGrid(columns: columns, spacing: 10) {
+            LazyVGrid(columns: Self.columns, spacing: 10) {
                 ForEach(data.categories) { category in
                     CategoryTile(
                         category: category,
@@ -161,10 +209,26 @@ struct TransactionSheet: View {
                 .buttonStyle(.plain)
             }
             Toggle(isOn: $alwaysUseRule) {
-                Text("Всегда относить «\(Merchant.shortName(tx.merchant))» к этой категории")
+                Text("Всегда относить «\(data.merchantName(tx.merchant))» к этой категории")
                     .font(.subheadline)
             }
             .tint(theme.accent)
+        }
+    }
+
+    private func excludeToggle(_ tx: Transaction) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Toggle(isOn: Binding(
+                get: { !tx.isExcluded },
+                set: { counts in store.mutate { $0.setExcluded(transactionID: tx.id, excluded: !counts) } }
+            )) {
+                Text("Учитывать в расчёте трат")
+                    .font(.subheadline)
+            }
+            .tint(theme.accent)
+            Text("Выключите, если платили не за себя, например по просьбе родителей. Операция останется в истории, но не попадёт в итоги, категории и лимиты.")
+                .font(.caption)
+                .foregroundStyle(theme.inkSoft)
         }
     }
 
@@ -172,8 +236,10 @@ struct TransactionSheet: View {
         HStack(spacing: 10) {
             if tx.kind != .transfer {
                 Button {
+                    saveNote()
                     store.mutate { $0.setKind(transactionID: tx.id, kind: .transfer) }
-                    close()
+                    lastChoice = "Перевод ✓"
+                    afterAction(closeOutsideQueue: false)
                 } label: {
                     Text("Это перевод").frame(maxWidth: .infinity)
                 }
@@ -181,6 +247,7 @@ struct TransactionSheet: View {
             }
             if tx.kind.isOutgoing {
                 Button {
+                    saveNote()
                     showDebtForm = true
                 } label: {
                     Text("Это долг").frame(maxWidth: .infinity)
@@ -204,16 +271,44 @@ struct TransactionSheet: View {
 
     private func choose(_ category: Category, for tx: Transaction) {
         let rule = alwaysUseRule
+        saveNote()
         store.mutate { $0.categorize(transactionID: tx.id, categoryID: category.id, createRule: rule) }
-        close()
+        lastChoice = "\(category.emoji) \(category.name) ✓"
+        afterAction(closeOutsideQueue: false)
+    }
+
+    /// В режиме разбора — следующая неотсортированная покупка (или закрыть, если их нет).
+    /// Вне разбора — остаёмся на операции, если не попросили закрыть.
+    private func afterAction(closeOutsideQueue: Bool) {
+        if sortingQueue {
+            if let next = store.data.uncategorized.first(where: { $0.id != currentID }) {
+                currentID = next.id
+                alwaysUseRule = false
+                loadNote()
+            } else {
+                dismiss()
+            }
+        } else if closeOutsideQueue {
+            dismiss()
+        }
+    }
+
+    private func loadNote() {
+        note = store.data.transaction(currentID)?.note ?? ""
+        noteLoaded = true
+    }
+
+    private func saveNote() {
+        guard noteLoaded else { return }
+        let current = store.data.transaction(currentID)?.note ?? ""
+        guard note != current else { return }
+        let text = note
+        let id = currentID
+        store.mutate { $0.setNote(transactionID: id, note: text) }
     }
 
     private func close() {
-        let current = store.data.transaction(transactionID)?.note ?? ""
-        if noteLoaded && note != current {
-            let text = note
-            store.mutate { $0.setNote(transactionID: transactionID, note: text) }
-        }
+        saveNote()
         dismiss()
     }
 }

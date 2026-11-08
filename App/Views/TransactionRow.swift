@@ -4,6 +4,8 @@ import SwiftUI
 struct TransactionRow: View {
     @Environment(\.theme) private var theme
     let tx: Transaction
+    /// Заголовок с учётом своего названия магазина (`AppData.displayTitle`).
+    let title: String
     let category: Category?
 
     var body: some View {
@@ -11,7 +13,7 @@ struct TransactionRow: View {
             icon
                 .frame(width: 36, height: 36)
             VStack(alignment: .leading, spacing: 2) {
-                Text(tx.title)
+                Text(title)
                     .foregroundStyle(theme.ink)
                     .lineLimit(1)
                 Text(subtitle)
@@ -22,7 +24,8 @@ struct TransactionRow: View {
             Spacer(minLength: 8)
             Text(Fmt.signedMoney(tx.amount, outgoing: tx.kind.isOutgoing, currency: tx.currency))
                 .font(theme.amountFont(.body))
-                .foregroundStyle(tx.kind.isOutgoing ? theme.ink : theme.positive)
+                .foregroundStyle(amountColor)
+                .strikethrough(tx.isExcluded, color: theme.inkSoft)
                 .lineLimit(1)
         }
         .contentShape(Rectangle())
@@ -36,6 +39,7 @@ struct TransactionRow: View {
             parts.append(tx.kind.title)
         }
         if let place = tx.placeSubtitle { parts.append(place) }
+        if tx.isExcluded { parts.append("не в расчёте") }
         parts.append(Fmt.time(tx.date))
         if tx.note != nil { parts.append("✎") }
         return parts.joined(separator: " · ")
@@ -55,6 +59,11 @@ struct TransactionRow: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(theme.rule.opacity(0.5), in: Circle())
         }
+    }
+
+    private var amountColor: Color {
+        if tx.isExcluded { return theme.inkSoft }
+        return tx.kind.isOutgoing ? theme.ink : theme.positive
     }
 
     private var symbol: String {

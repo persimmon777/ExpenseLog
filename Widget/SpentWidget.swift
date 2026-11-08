@@ -29,7 +29,7 @@ struct TodayProvider: TimelineProvider {
     private func makeEntry() -> TodayEntry {
         let data = DataFile.load()
         let today = data.transactions.filter {
-            $0.kind.countsAsExpense && Fmt.calendar.isDateInToday($0.date)
+            $0.countsAsExpense && Fmt.calendar.isDateInToday($0.date)
         }
         let total = today.reduce(Decimal(0)) { $0 + $1.amount }
         return TodayEntry(date: Date(), total: total, count: today.count)

@@ -88,7 +88,7 @@ struct PasteSMSSheet: View {
         let status = store.data.previewStatus(sms)
         return HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(sms.type == .payment ? sms.place : (sms.type == .topUp ? "Пополнение" : "Снятие наличных"))
+                Text(sms.type == .payment ? store.data.merchantName(sms.place) : (sms.type == .topUp ? "Пополнение" : "Снятие наличных"))
                     .lineLimit(1)
                 Text(statusText(status, sms: sms))
                     .font(.caption)
