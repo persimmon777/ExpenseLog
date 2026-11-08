@@ -50,8 +50,10 @@ struct AnalyticsView: View {
                                 period = .week
                             },
                             onSelectMonth: {
-                                selectedDate = Fmt.calendar.isDate(displayedMonth, equalTo: Date(), toGranularity: .month) ? Date() : displayedMonth
-                                period = .month
+                                selectMonth(displayedMonth)
+                            },
+                            onShiftMonth: { month in
+                                selectMonth(month)
                             }
                         )
                     }
@@ -234,6 +236,17 @@ struct AnalyticsView: View {
         let lastDay = cal.date(byAdding: .day, value: -1, to: month.end) ?? month.end
         let end = cal.dateInterval(of: .weekOfYear, for: lastDay)?.end ?? month.end
         return (start, end)
+    }
+
+    /// Статистика за месяц: текущий месяц — по сегодняшний день, другой — с его первого числа.
+    private func selectMonth(_ month: Date) {
+        let cal = Fmt.calendar
+        if cal.isDate(month, equalTo: Date(), toGranularity: .month) {
+            selectedDate = Date()
+        } else {
+            selectedDate = cal.dateInterval(of: .month, for: month)?.start ?? month
+        }
+        period = .month
     }
 
     private func askDeepSeek(_ text: String) {

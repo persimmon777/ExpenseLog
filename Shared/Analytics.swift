@@ -60,7 +60,7 @@ struct PeriodSummary {
     let income: Decimal
     let transfers: Decimal
     let debtGiven: Decimal
-    /// Изменение к прошлому такому же периоду, %. Для «Дня» не считается (владелец попросил).
+    /// Изменение к прошлому месяцу, %. Для дня и недели не считается (владелец попросил).
     let changePercent: Double?
     /// План трат на период (из плана на неделю).
     let plan: Decimal?
@@ -145,7 +145,8 @@ extension AppData {
         }
 
         var change: Double?
-        if period != .day, let prevStart = cal.date(byAdding: period.component, value: -1, to: start) {
+        // Сравниваем только месяц с прошлым месяцем (день и неделю — нет, просьба владельца).
+        if period == .month, let prevStart = cal.date(byAdding: period.component, value: -1, to: start) {
             let previous = expenseTotal(from: prevStart, to: start)
             if previous > 0 {
                 change = NSDecimalNumber(decimal: (total - previous) / previous * 100).doubleValue
