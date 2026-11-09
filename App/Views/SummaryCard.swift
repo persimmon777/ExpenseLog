@@ -24,8 +24,13 @@ struct ReceiptSummary: View {
     /// Нажатие на «Планируется» — открыть список покупок.
     let onPlannedTap: () -> Void
 
+    /// Что крупно вверху: сегодня, неделя или месяц (Настройки → «Крупно на главной»).
+    @AppStorage(SharedSettings.Key.homePeriod, store: AppGroup.defaults)
+    private var homePeriodRaw: String = AnalyticsPeriod.day.rawValue
+
     var body: some View {
         let data = store.data
+        let main = AnalyticsPeriod(rawValue: homePeriodRaw) ?? .day
         PaperCard {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .top, spacing: 12) {
@@ -33,21 +38,22 @@ struct ReceiptSummary: View {
                         Text(Fmt.monthYear(Date()))
                             .font(.caption)
                             .foregroundStyle(theme.inkSoft)
-                        AmountRow(title: "Сегодня", value: Fmt.money(data.expenseTotal(in: .day)), emphasized: true)
-                        if let status = data.planStatus(.day) {
+                        AmountRow(title: Self.title(main), value: Fmt.money(data.expenseTotal(in: main.component)), emphasized: true)
+                        if let status = data.planStatus(main) {
                             LimitBar(status: status)
-                            Text(todayLine(status, carried: data.carriedIntoToday()))
+                            Text(main == .day ? todayLine(status, carried: data.carriedIntoToday()) : periodLine(status))
                                 .font(.caption2)
                                 .foregroundStyle(status.level == .over ? theme.danger : theme.inkSoft)
                         }
                     }
                     if let mascot = data.mascotImageName() {
-                        MascotBadge(imageName: mascot, size: 72)
+                        MascotBadge(imageName: mascot, size: 76)
                     }
                 }
                 RuleLine()
-                AmountRow(title: "Неделя", value: planValue(data.planStatus(.week), spent: data.expenseTotal(in: .weekOfYear)))
-                AmountRow(title: "За месяц", value: planValue(data.planStatus(.month), spent: data.expenseTotal(in: .month)))
+                ForEach(AnalyticsPeriod.allCases.filter { $0 != main }) { period in
+                    AmountRow(title: Self.title(period), value: planValue(data.planStatus(period), spent: data.expenseTotal(in: period.component)))
+                }
                 AmountRow(title: "Прогноз на месяц", value: Fmt.money(data.monthForecast()))
                 Button(action: onPlannedTap) {
                     VStack(alignment: .leading, spacing: 6) {
@@ -96,11 +102,21 @@ struct ReceiptSummary: View {
         return "Можно ещё \(Fmt.money(status.limit - status.spent)) из \(Fmt.money(status.limit))\(extra)"
     }
 
-    /// «План 20,00 BYN в день · осталось 7,60 BYN».
-    private func planLine(_ status: LimitStatus, unit: String) -> String {
-        let base = "План \(Fmt.money(status.limit)) \(unit)"
-        if status.spent > status.limit { return base + " · перерасход \(Fmt.money(status.spent - status.limit))" }
-        return base + " · осталось \(Fmt.money(status.limit - status.spent))"
+    /// «Сегодня» / «Неделя» / «За месяц».
+    static func title(_ period: AnalyticsPeriod) -> String {
+        switch period {
+        case .day: return "Сегодня"
+        case .week: return "Неделя"
+        case .month: return "За месяц"
+        }
+    }
+
+    /// «Можно ещё 40,00 из 140,00 BYN» / «Перерасход 5,00 · план 140,00 BYN».
+    private func periodLine(_ status: LimitStatus) -> String {
+        if status.spent > status.limit {
+            return "Перерасход \(Fmt.money(status.spent - status.limit)) · план \(Fmt.money(status.limit))"
+        }
+        return "Можно ещё \(Fmt.money(status.limit - status.spent)) из \(Fmt.money(status.limit))"
     }
 
     /// «из SMS, сегодня в 20:41» / «указан вручную, вчера в 09:10».

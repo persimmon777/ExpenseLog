@@ -48,6 +48,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.saevich.spent
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Запасные иконки с персонажами (Настройки → «Иконка приложения»), генерирует Tools/make_mascot_icons.py
+        ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: "AppIcon-persimmon AppIcon-husky AppIcon-dachshund AppIcon-whitecat AppIcon-ironman AppIcon-girl AppIcon-boy AppIcon-tabby AppIcon-washer"
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
     dependencies:
       - target: SpentWidget

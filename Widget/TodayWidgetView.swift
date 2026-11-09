@@ -98,22 +98,16 @@ struct TodayWidgetView: View {
                     .lineLimit(2)
             }
             Spacer(minLength: 0)
-            HStack(alignment: .bottom, spacing: 6) {
-                if let title = entry.lastTitle, let amount = entry.lastAmount {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(title)
-                            .font(.caption)
-                            .foregroundStyle(theme.ink)
-                            .lineLimit(1)
-                        Text("−" + Fmt.money(amount))
-                            .font(theme.amountFont(.caption2))
-                            .foregroundStyle(theme.inkSoft)
-                            .lineLimit(1)
-                    }
-                }
-                Spacer(minLength: 0)
-                if entry.isShared, let mascot = entry.mascotImage {
-                    MascotBadge(imageName: mascot, size: 36)
+            if let title = entry.lastTitle, let amount = entry.lastAmount {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(title)
+                        .font(.caption)
+                        .foregroundStyle(theme.ink)
+                        .lineLimit(1)
+                    Text("−" + Fmt.money(amount))
+                        .font(theme.amountFont(.caption2))
+                        .foregroundStyle(theme.inkSoft)
+                        .lineLimit(1)
                 }
             }
         }

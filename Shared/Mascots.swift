@@ -11,12 +11,12 @@ struct Mascot: Identifiable, Hashable {
 enum Mascots {
     static let all: [Mascot] = [
         Mascot(id: "persimmon", name: "Хурма"),
-        Mascot(id: "husky", name: "Хаски"),
+        Mascot(id: "husky", name: "Маламутик"),
         Mascot(id: "dachshund", name: "Таксик"),
-        Mascot(id: "whitecat", name: "Снежок"),
+        Mascot(id: "whitecat", name: "Анджелла"),
         Mascot(id: "ironman", name: "Железный"),
-        Mascot(id: "girl", name: "Красавица"),
-        Mascot(id: "boy", name: "Парень"),
+        Mascot(id: "girl", name: "Игорь"),
+        Mascot(id: "boy", name: "Маратик"),
         Mascot(id: "tabby", name: "Котик"),
         Mascot(id: "washer", name: "Стиралка")
     ]
@@ -85,7 +85,7 @@ extension AppData {
     }
 }
 
-/// Стикер персонажа со скруглёнными углами (картинки на кремовом фоне).
+/// Персонаж, вырезанный по контуру, с белой каймой наклейки.
 struct MascotBadge: View {
     let imageName: String
     var size: CGFloat = 56
@@ -96,7 +96,6 @@ struct MascotBadge: View {
             .interpolation(.high)
             .scaledToFit()
             .frame(width: size, height: size)
-            .clipShape(RoundedRectangle(cornerRadius: size * 0.24, style: .continuous))
-            .shadow(color: .black.opacity(0.12), radius: 2, y: 1)
+            .shadow(color: .black.opacity(0.18), radius: 1.5, y: 1)
     }
 }
