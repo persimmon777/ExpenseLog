@@ -68,9 +68,21 @@ def fill_between_legs(mask):
     # не дальше нижней кромки лапок: последняя строка, где персонаж есть хоть где-то
     rows = np.where(m.any(axis=1))[0]
     if len(rows):
-        # живот заканчивается чуть выше пола — лапки торчат отдельно и обводятся каждая своей каймой
-        paws = int((rows[-1] - rows[0]) * 0.09)
-        fill[rows[-1] - paws + 1:] = False
+        floor = rows[-1]
+        fill[floor + 1:] = False
+        # между лапками — арка: живот заканчивается дугой над полом, лапки обводятся каждая своей каймой
+        arch = max(int((floor - rows[0]) * 0.13), 4)
+        row = fill[floor - 1] & ~m[floor - 1]
+        xs = np.where(row)[0]
+        if len(xs):
+            segments = np.split(xs, np.where(np.diff(xs) > 1)[0] + 1)
+            yy, xx = np.mgrid[0:h, 0:w]
+            for seg in segments:
+                if len(seg) < 4:
+                    continue
+                cx, a = (seg[0] + seg[-1]) / 2, (seg[-1] - seg[0]) / 2 + 1
+                inside = ((xx - cx) / a) ** 2 + ((yy - floor) / arch) ** 2 <= 1
+                fill &= ~inside
     return Image.fromarray(((m | fill) * 255).astype(np.uint8))
 
 def grow(mask, radius):
