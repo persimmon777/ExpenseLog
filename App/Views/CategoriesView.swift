@@ -15,19 +15,18 @@ struct CategoriesView: View {
             List {
                 Section {
                     ForEach(data.categories) { category in
-                        Button {
-                            editing = category
+                        NavigationLink {
+                            CategoryDetailView(categoryID: category.id)
                         } label: {
                             row(category, data: data)
                         }
-                        .buttonStyle(.plain)
                         .listRowBackground(theme.paper)
                         .listRowSeparatorTint(theme.rule)
                     }
                 } header: {
                     header(Fmt.monthYear(Date()))
                 } footer: {
-                    Text("Нажмите на категорию, чтобы изменить её или задать лимит на месяц.")
+                    Text("Нажмите на категорию — откроются её магазины. Изменить категорию или задать лимит — кнопка «Изменить» внутри.")
                         .foregroundStyle(theme.inkSoft)
                 }
 

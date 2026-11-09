@@ -29,6 +29,20 @@ extension AppData {
     mutating func autoMatch(transactionAt index: Int) -> [String] {
         guard transactions.indices.contains(index) else { return [] }
         let tx = transactions[index]
+        // Пополнение: ищем регулярное поступление с похожей суммой около его даты — «получено».
+        if tx.kind == .income {
+            if let i = recurring.firstIndex(where: { item in
+                item.isActive && item.isIncome
+                    && AppData.amountMatches(tx.amount, expected: item.amount, percent: item.tolerance)
+                    && item.isNearOccurrence(tx.date)
+                    && !item.isPaid(near: tx.date)
+            }) {
+                recurring[i].lastPaidDate = tx.date
+                recurring[i].lastPaidTransactionID = tx.id
+                return ["\(recurring[i].title) — поступление получено"]
+            }
+            return []
+        }
         guard tx.kind == .expense else { return [] }
         var matched: [String] = []
 
@@ -48,6 +62,7 @@ extension AppData {
             item.isActive && !item.isIncome
                 && AppData.merchantMatches(tx.merchant, key: item.merchantKey)
                 && AppData.amountMatches(tx.amount, expected: item.amount, percent: item.tolerance)
+                && item.isNearOccurrence(tx.date)
                 && !item.isPaid(near: tx.date)
         }) {
             recurring[i].lastPaidDate = tx.date

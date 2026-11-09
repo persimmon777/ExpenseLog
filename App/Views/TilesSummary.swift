@@ -23,7 +23,8 @@ struct TilesSummary: View {
                 }
                 .buttonStyle(.plain)
                 Button(action: onPlannedTap) {
-                    tile(title: "Планируется\nкупить", value: Fmt.money(data.plannedTotal), icon: "cart")
+                    tile(title: "Планируется", value: "−" + Fmt.money(data.plannedExpenseTotal()),
+                         subtitle: "+" + Fmt.money(data.plannedIncomeTotal()) + " поступит", icon: "cart")
                 }
                 .buttonStyle(.plain)
             }
@@ -57,6 +58,9 @@ struct TilesSummary: View {
                     }
                 }
                 Spacer(minLength: 0)
+                if let mascot = data.mascotImageName() {
+                    MascotBadge(imageName: mascot, size: 60)
+                }
                 ZStack {
                     SparklineShape(values: values, closed: true)
                         .fill(LinearGradient(
@@ -67,7 +71,7 @@ struct TilesSummary: View {
                     SparklineShape(values: values)
                         .stroke(theme.onAccent, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
                 }
-                .frame(width: 110, height: 48)
+                .frame(width: data.mascotImageName() == nil ? 110 : 80, height: 48)
             }
             if let weekStatus {
                 VStack(alignment: .leading, spacing: 4) {

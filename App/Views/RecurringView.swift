@@ -123,7 +123,7 @@ struct RecurringView: View {
     private func subtitle(_ item: RecurringItem, next: Date?) -> String {
         guard let next else { return item.scheduleText }
         if item.isUpcomingPaid(), let paid = item.lastPaidDate {
-            return "\(item.scheduleText) · оплачено \(Fmt.dayMonth(paid))"
+            return "\(item.scheduleText) · \(item.isIncome ? "получено" : "оплачено") \(Fmt.dayMonth(paid))"
         }
         let cal = Fmt.calendar
         let days = cal.dateComponents([.day], from: cal.startOfDay(for: Date()), to: next).day ?? 0
