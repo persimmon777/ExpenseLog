@@ -21,16 +21,23 @@ struct ShoppingListSheet: View {
         let data = store.data
         let toBuy = data.shoppingToBuy
         let bought = data.shoppingBought
+        let regular = data.plannedExpenses().filter { $0.kind == .recurring }
+        let incomes = data.plannedIncomes()
 
         NavigationStack {
             List {
                 Section {
-                    AmountRow(title: "Осталось купить", value: Fmt.money(data.plannedTotal), emphasized: true)
+                    AmountRow(title: "Планируемые траты", value: "−" + Fmt.money(data.plannedExpenseTotal()), emphasized: true)
                         .listRowBackground(theme.paper)
-                    if let balance = data.lastBalance, data.plannedTotal > 0 {
-                        AmountRow(title: "Останется на карте", value: Fmt.money(balance - data.plannedTotal))
+                    AmountRow(title: "Планируемые поступления", value: "+" + Fmt.money(data.plannedIncomeTotal()))
+                        .listRowBackground(theme.paper)
+                    if let after = data.balanceAfterPlanned() {
+                        AmountRow(title: "Останется на карте", value: Fmt.money(after))
                             .listRowBackground(theme.paper)
                     }
+                } footer: {
+                    Text("До конца месяца. Траты — список покупок и регулярные платежи, поступления — регулярные поступления и долги, которые должны вернуть в этом месяце.")
+                        .foregroundStyle(theme.inkSoft)
                 }
 
                 Section {
@@ -65,6 +72,32 @@ struct ShoppingListSheet: View {
                     }
                 }
 
+                if !regular.isEmpty {
+                    Section {
+                        ForEach(regular) { line in
+                            plannedRow(line, sign: "−")
+                        }
+                    } header: {
+                        header("Регулярные платежи в этом месяце")
+                    } footer: {
+                        Text("Платёж исчезнет отсюда, когда придёт SMS об оплате (если у платежа указан магазин).")
+                            .foregroundStyle(theme.inkSoft)
+                    }
+                }
+
+                if !incomes.isEmpty {
+                    Section {
+                        ForEach(incomes) { line in
+                            plannedRow(line, sign: "+")
+                        }
+                    } header: {
+                        header("Ожидаемые поступления")
+                    } footer: {
+                        Text("Регулярное поступление отметится полученным, когда придёт пополнение на похожую сумму около его даты. Долг — когда отметите его возвращённым.")
+                            .foregroundStyle(theme.inkSoft)
+                    }
+                }
+
                 if !bought.isEmpty {
                     Section {
                         ForEach(bought) { item in
@@ -81,7 +114,7 @@ struct ShoppingListSheet: View {
             }
             .listStyle(.insetGrouped)
             .themedBackground(theme)
-            .navigationTitle("Список покупок")
+            .navigationTitle("Планируемое")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -198,6 +231,31 @@ struct ShoppingListSheet: View {
             }
             .tint(theme.accent)
         }
+    }
+
+    /// Строка регулярного платежа / поступления / долга (только просмотр).
+    private func plannedRow(_ line: PlannedLine, sign: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: line.kind == .debt ? "person.crop.circle" : "arrow.triangle.2.circlepath")
+                .foregroundStyle(theme.inkSoft)
+                .frame(width: 24)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(line.title)
+                    .foregroundStyle(theme.ink)
+                    .lineLimit(1)
+                if let date = line.date {
+                    Text(line.isOverdue ? "\(Fmt.dayMonth(date)) · \(sign == "+" ? "ещё не пришло" : "ещё не оплачено")" : Fmt.dayMonth(date))
+                        .font(.caption2)
+                        .foregroundStyle(line.isOverdue ? theme.danger : theme.inkSoft)
+                }
+            }
+            Spacer(minLength: 8)
+            Text(sign + Fmt.money(line.amount))
+                .font(theme.amountFont(.body))
+                .foregroundStyle(sign == "+" ? theme.positive : theme.ink)
+                .lineLimit(1)
+        }
+        .listRowBackground(theme.paper)
     }
 
     private func header(_ text: String) -> some View {

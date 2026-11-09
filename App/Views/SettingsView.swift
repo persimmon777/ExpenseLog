@@ -9,6 +9,17 @@ struct SettingsView: View {
     @AppStorage(SharedSettings.Key.themePalettes, store: AppGroup.defaults)
     private var themePalettesRaw: String = ""
 
+    @AppStorage(SharedSettings.Key.mascot, store: AppGroup.defaults)
+    private var mascotRaw: String = Mascots.randomID
+
+    private var mascotTitle: String {
+        switch mascotRaw {
+        case Mascots.randomID: return "каждый день новый"
+        case Mascots.noneID: return "выключен"
+        default: return Mascots.all.first { $0.id == mascotRaw }?.name ?? "каждый день новый"
+        }
+    }
+
     var body: some View {
         let themeID = ThemeID(rawValue: themeRaw) ?? .receipt
         let palette = themeID.palette(withID: ThemePalettes.decode(themePalettesRaw)[themeID.rawValue])
@@ -20,6 +31,11 @@ struct SettingsView: View {
                         ThemeSettingsView()
                     } label: {
                         LabeledContent("Оформление", value: "\(themeID.title) · \(palette.name)")
+                    }
+                    NavigationLink {
+                        MascotSettingsView()
+                    } label: {
+                        LabeledContent("Персонаж", value: mascotTitle)
                     }
                     NavigationLink {
                         RecurringView()

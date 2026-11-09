@@ -28,23 +28,33 @@ struct ReceiptSummary: View {
         let data = store.data
         PaperCard {
             VStack(alignment: .leading, spacing: 10) {
-                Text(Fmt.monthYear(Date()))
-                    .font(.caption)
-                    .foregroundStyle(theme.inkSoft)
-                AmountRow(title: "Сегодня", value: Fmt.money(data.expenseTotal(in: .day)), emphasized: true)
-                if let status = data.planStatus(.day) {
-                    LimitBar(status: status)
-                    Text(todayLine(status, carried: data.carriedIntoToday()))
-                        .font(.caption2)
-                        .foregroundStyle(status.level == .over ? theme.danger : theme.inkSoft)
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(Fmt.monthYear(Date()))
+                            .font(.caption)
+                            .foregroundStyle(theme.inkSoft)
+                        AmountRow(title: "Сегодня", value: Fmt.money(data.expenseTotal(in: .day)), emphasized: true)
+                        if let status = data.planStatus(.day) {
+                            LimitBar(status: status)
+                            Text(todayLine(status, carried: data.carriedIntoToday()))
+                                .font(.caption2)
+                                .foregroundStyle(status.level == .over ? theme.danger : theme.inkSoft)
+                        }
+                    }
+                    if let mascot = data.mascotImageName() {
+                        MascotBadge(imageName: mascot, size: 72)
+                    }
                 }
                 RuleLine()
                 AmountRow(title: "Неделя", value: planValue(data.planStatus(.week), spent: data.expenseTotal(in: .weekOfYear)))
                 AmountRow(title: "За месяц", value: planValue(data.planStatus(.month), spent: data.expenseTotal(in: .month)))
                 AmountRow(title: "Прогноз на месяц", value: Fmt.money(data.monthForecast()))
                 Button(action: onPlannedTap) {
-                    AmountRow(title: "Планируется", value: Fmt.money(data.plannedTotal))
-                        .contentShape(Rectangle())
+                    VStack(alignment: .leading, spacing: 6) {
+                        AmountRow(title: "Планируемые траты", value: "−" + Fmt.money(data.plannedExpenseTotal()))
+                        AmountRow(title: "Планируемые поступления", value: "+" + Fmt.money(data.plannedIncomeTotal()))
+                    }
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 RuleLine()

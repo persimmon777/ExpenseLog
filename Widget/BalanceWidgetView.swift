@@ -60,7 +60,13 @@ struct BalanceWidgetView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             } else {
                 VStack(alignment: .leading, spacing: 6) {
-                    block(title: "На карте", value: balanceText, color: theme.ink, icon: "creditcard")
+                    HStack(alignment: .top, spacing: 4) {
+                        block(title: "На карте", value: balanceText, color: theme.ink, icon: "creditcard")
+                        Spacer(minLength: 0)
+                        if let mascot = entry.mascotImage {
+                            MascotBadge(imageName: mascot, size: 34)
+                        }
+                    }
                     Rectangle()
                         .fill(theme.rule)
                         .frame(height: 1)

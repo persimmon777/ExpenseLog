@@ -132,7 +132,7 @@ enum AppGroup {
         let keys = [SharedSettings.Key.theme, SharedSettings.Key.themePalettes, SharedSettings.Key.backupFolderBookmark,
                     SharedSettings.Key.backupFolderName, SharedSettings.Key.lastBackupDate,
                     SharedSettings.Key.notifyWeeklySummary, SharedSettings.Key.notifyLimits, SharedSettings.Key.notifyDebts,
-                    SharedSettings.Key.notifyRecurring, SharedSettings.Key.lastAutoAddDate, SharedSettings.Key.lastAutoAddResult]
+                    SharedSettings.Key.notifyRecurring, SharedSettings.Key.mascot, SharedSettings.Key.lastAutoAddDate, SharedSettings.Key.lastAutoAddResult]
         let group = defaults
         for key in keys where group.object(forKey: key) == nil {
             if let value = UserDefaults.standard.object(forKey: key) {
@@ -231,6 +231,8 @@ enum SharedSettings {
         static let notifyLimits = "notifyLimits"
         static let notifyDebts = "notifyDebts"
         static let notifyRecurring = "notifyRecurring"
+        /// Персонаж: id, «random» (каждый день новый) или «none».
+        static let mascot = "mascot"
         /// Когда последний раз сработала команда «Добавить SMS банка» и что она сделала.
         static let lastAutoAddDate = "lastAutoAddDate"
         static let lastAutoAddResult = "lastAutoAddResult"

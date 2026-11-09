@@ -72,25 +72,27 @@ struct RecurringEditSheet: View {
                          ? "В день поступления в 10:00 придёт напоминание."
                          : "Накануне списания в 19:00 придёт напоминание. Сама трата появится, когда придёт SMS банка.")
                 }
-                if !isIncome {
-                    Section {
-                        MerchantField(name: $merchant)
+                Section {
+                        if !isIncome {
+                            MerchantField(name: $merchant)
+                        }
                         Picker("Допуск по сумме", selection: $tolerance) {
                             ForEach([0, 5, 10, 15, 20, 25, 30, 40, 50, 100], id: \.self) { p in
                                 Text(p == 0 ? "точно" : "±\(p)%").tag(p)
                             }
                         }
                         if let amount {
-                            Text("Подойдёт оплата от \(Fmt.money(amount * Decimal(100 - min(tolerance, 100)) / 100)) до \(Fmt.money(amount * Decimal(100 + tolerance) / 100))")
+                            Text("Подойдёт \(isIncome ? "пополнение" : "оплата") от \(Fmt.money(amount * Decimal(100 - min(tolerance, 100)) / 100)) до \(Fmt.money(amount * Decimal(100 + tolerance) / 100))")
                                 .font(.caption)
                                 .foregroundStyle(theme.inkSoft)
                         }
                     } header: {
-                        Text("Отметить оплату само")
+                        Text(isIncome ? "Отметить получение само" : "Отметить оплату само")
                     } footer: {
-                        Text("Когда придёт оплата в этом магазине на сумму в пределах допуска, платёж отметится оплаченным: напоминание не придёт, трате проставится категория. Если сумма меняется (например, связь), поставьте допуск побольше.")
+                        Text(isIncome
+                             ? "Когда около даты придёт пополнение на сумму в пределах допуска, поступление отметится полученным и уйдёт из планируемых."
+                             : "Когда придёт оплата в этом магазине на сумму в пределах допуска, платёж отметится оплаченным: напоминание не придёт, трате проставится категория. Если сумма меняется (например, связь), поставьте допуск побольше.")
                     }
-                }
                 if original != nil {
                     Section {
                         Toggle("Активен", isOn: $isActive)

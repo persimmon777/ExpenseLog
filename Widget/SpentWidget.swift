@@ -31,6 +31,8 @@ struct TodayEntry: TimelineEntry {
     /// Виджет видит общую папку с данными приложения.
     let isShared: Bool
     let theme: Theme
+    /// Картинка персонажа (nil — выключен в настройках).
+    var mascotImage: String? = nil
 
     static let sample = TodayEntry(
         date: Date(), total: 23.4, count: 3,
@@ -40,7 +42,8 @@ struct TodayEntry: TimelineEntry {
             TopCategory(name: "Кафе", emoji: "☕️", colorHex: "F3A712", total: 6.6),
             TopCategory(name: "Транспорт", emoji: "🚌", colorHex: "00A6A6", total: 4.5)
         ],
-        dayPlan: 25, canSpend: 1.6, carried: 5, overspentToday: 0, isShared: true, theme: .receipt
+        dayPlan: 25, canSpend: 1.6, carried: 5, overspentToday: 0, isShared: true, theme: .receipt,
+        mascotImage: "mascot-persimmon-3"
     )
 }
 
@@ -73,7 +76,8 @@ struct TodayProvider: TimelineProvider {
             lastTitle: last.map { data.displayTitle(for: $0) }, lastAmount: last?.amount,
             top: Array(top), dayPlan: data.dayAllowance(now), canSpend: data.canSpendToday(now: now),
             carried: data.carriedIntoToday(now: now), overspentToday: data.overspentToday(now: now),
-            isShared: AppGroup.isShared, theme: Theme.current
+            isShared: AppGroup.isShared, theme: Theme.current,
+            mascotImage: data.mascotImageName(now: now)
         )
     }
 }
@@ -102,9 +106,12 @@ struct BalanceEntry: TimelineEntry {
     let overspentToday: Decimal
     let isShared: Bool
     let theme: Theme
+    /// Картинка персонажа (nil — выключен в настройках).
+    var mascotImage: String? = nil
 
     static let sample = BalanceEntry(date: Date(), balance: 512.4, balanceDate: Date(), isManual: false,
-                                     canSpend: 8.4, overspentToday: 0, isShared: true, theme: .receipt)
+                                     canSpend: 8.4, overspentToday: 0, isShared: true, theme: .receipt,
+                                     mascotImage: "mascot-persimmon-2")
 }
 
 struct BalanceProvider: TimelineProvider {
@@ -125,7 +132,8 @@ struct BalanceProvider: TimelineProvider {
         let now = Date()
         return BalanceEntry(date: now, balance: data.lastBalance, balanceDate: data.lastBalanceDate,
                             isManual: data.balanceSetManually, canSpend: data.canSpendToday(now: now),
-                            overspentToday: data.overspentToday(now: now), isShared: AppGroup.isShared, theme: Theme.current)
+                            overspentToday: data.overspentToday(now: now), isShared: AppGroup.isShared, theme: Theme.current,
+                            mascotImage: data.mascotImageName(now: now))
     }
 }
 
