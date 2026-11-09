@@ -15,7 +15,7 @@ SCALE = 3          # работаем в увеличенном виде — г�
 SIZE = 300         # итоговая картинка
 CLOSE = 4 * SCALE  # насколько раздуваем линии, чтобы закрыть щели в обводке
 # у белых персонажей щели в обводке шире (живот того же цвета, что фон листа)
-CLOSE_FOR = {"whitecat": 11 * SCALE, "husky": 9 * SCALE}
+CLOSE_FOR = {"whitecat": 5 * SCALE, "husky": 9 * SCALE}
 BORDER = 3 * SCALE # белая кайма наклейки
 
 def bands(p, minlen, gap):
@@ -30,9 +30,12 @@ def bands(p, minlen, gap):
 
 def odd(n): return n * 2 + 1
 
-def silhouette(ink, close):
+def silhouette(ink, close, legs=False):
     """Маска персонажа: замкнуть линии, залить фон снаружи, вернуть размер."""
     m = grow(Image.fromarray((ink * 255).astype(np.uint8)), close)
+    if legs:
+        # закрыть низ живота между лапками до заливки фона, иначе фон затечёт внутрь
+        m = fill_between_legs(m)
     padded = Image.new("L", (m.width + 2, m.height + 2), 0)
     padded.paste(m, (1, 1))
     ImageDraw.floodfill(padded, (0, 0), 128)
@@ -46,6 +49,29 @@ def shrink(mask, radius):
         m = m.filter(ImageFilter.MinFilter(odd(r)))
         radius -= r
     return m
+
+# У белых персонажей живот между лапками нарисован без нижней линии — закрываем его до линии лапок.
+FILL_BETWEEN_LEGS = {"whitecat"}
+
+def fill_between_legs(mask):
+    """У лапок: пиксель — часть персонажа, если слева, справа и сверху от него есть персонаж."""
+    m = np.asarray(mask) > 127
+    h, w = m.shape
+    left = np.maximum.accumulate(m, axis=1)
+    right = np.maximum.accumulate(m[:, ::-1], axis=1)[:, ::-1]
+    above = np.maximum.accumulate(m, axis=0)
+    fill = left & right & above
+    rows_any = np.where(m.any(axis=1))[0]
+    top = rows_any[0] if len(rows_any) else 0
+    # только уровень лапок: нижние ~30% персонажа
+    fill[: int(top + (h - top) * 0.70)] = False
+    # не дальше нижней кромки лапок: последняя строка, где персонаж есть хоть где-то
+    rows = np.where(m.any(axis=1))[0]
+    if len(rows):
+        # живот заканчивается чуть выше пола — лапки торчат отдельно и обводятся каждая своей каймой
+        paws = int((rows[-1] - rows[0]) * 0.09)
+        fill[rows[-1] - paws + 1:] = False
+    return Image.fromarray(((m | fill) * 255).astype(np.uint8))
 
 def grow(mask, radius):
     m = mask
@@ -82,7 +108,7 @@ def main(path):
             x1, y1 = (right - box[0] + 2) * SCALE, (bottom - box[1] + 2) * SCALE
             keep[max(y0, 0):y1, max(x0, 0):x1] = True
             ink &= keep
-            body = silhouette(ink, CLOSE_FOR.get(IDS[r], CLOSE))
+            body = silhouette(ink, CLOSE_FOR.get(IDS[r], CLOSE), legs=IDS[r] in FILL_BETWEEN_LEGS)
             body_soft = body.filter(ImageFilter.GaussianBlur(SCALE * 0.6))
             border = grow(body, BORDER).filter(ImageFilter.GaussianBlur(SCALE * 0.7))
 
