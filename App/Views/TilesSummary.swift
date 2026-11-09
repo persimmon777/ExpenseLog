@@ -9,14 +9,26 @@ struct TilesSummary: View {
 
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
 
+    /// Что крупно в большой карточке: сегодня, неделя или месяц (Настройки → «Крупно на главной»).
+    @AppStorage(SharedSettings.Key.homePeriod, store: AppGroup.defaults)
+    private var homePeriodRaw: String = AnalyticsPeriod.day.rawValue
+
+    private var main: AnalyticsPeriod { AnalyticsPeriod(rawValue: homePeriodRaw) ?? .day }
+
     var body: some View {
         let data = store.data
         VStack(spacing: 12) {
             hero(data)
             LazyVGrid(columns: columns, spacing: 12) {
-                tile(title: "Месяц", value: Fmt.money(data.expenseTotal(in: .month)),
-                     subtitle: data.monthPlan(containing: Date()).map { "из \(Fmt.money($0))" },
-                     change: data.monthPlan(containing: Date()) == nil ? data.monthChangePercent() : nil)
+                if main == .month {
+                    // Месяц уже крупно — в плитке «Сегодня».
+                    tile(title: "Сегодня", value: Fmt.money(data.expenseTotal(in: .day)),
+                         subtitle: data.planStatus(.day).map { "из \(Fmt.money(max($0.limit, 0)))" })
+                } else {
+                    tile(title: "Месяц", value: Fmt.money(data.expenseTotal(in: .month)),
+                         subtitle: data.monthPlan(containing: Date()).map { "из \(Fmt.money($0))" },
+                         change: data.monthPlan(containing: Date()) == nil ? data.monthChangePercent() : nil)
+                }
                 tile(title: "Прогноз\nна месяц", value: Fmt.money(data.monthForecast()))
                 Button(action: onBalanceTap) {
                     tile(title: "На карте", value: data.lastBalance.map { Fmt.money($0) } ?? "указать", icon: "creditcard")
@@ -35,24 +47,26 @@ struct TilesSummary: View {
 
     private func hero(_ data: AppData) -> some View {
         let values = data.dailyTotals(lastDays: 14).map { NSDecimalNumber(decimal: $0).doubleValue }
-        let dayStatus = data.planStatus(.day)
-        let weekStatus = data.planStatus(.week)
+        let mainStatus = data.planStatus(main)
+        // Под суммой дня — полоска недели (как раньше), под неделей/месяцем — их собственная.
+        let barPeriod: AnalyticsPeriod = main == .day ? .week : main
+        let barStatus = main == .day ? data.planStatus(.week) : mainStatus
         let shape = RoundedRectangle(cornerRadius: theme.cornerRadius, style: .continuous)
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .bottom, spacing: 12) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Сегодня")
+                    Text(ReceiptSummary.title(main))
                         .font(.subheadline)
                         .foregroundStyle(theme.onAccent.opacity(0.9))
-                    Text(Fmt.money(data.expenseTotal(in: .day)))
+                    Text(Fmt.money(data.expenseTotal(in: main.component)))
                         .font(theme.amountFont(.title, weight: .bold))
                         .foregroundStyle(theme.onAccent)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
-                    if let dayStatus {
-                        Text(dayStatus.spent > dayStatus.limit
-                             ? "Перерасход \(Fmt.money(dayStatus.spent - dayStatus.limit))"
-                             : "Можно ещё \(Fmt.money(dayStatus.limit - dayStatus.spent))")
+                    if let mainStatus {
+                        Text(mainStatus.spent > mainStatus.limit
+                             ? "Перерасход \(Fmt.money(mainStatus.spent - mainStatus.limit))"
+                             : "Можно ещё \(Fmt.money(mainStatus.limit - mainStatus.spent))")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(theme.onAccent.opacity(0.9))
                     }
@@ -73,18 +87,18 @@ struct TilesSummary: View {
                 }
                 .frame(width: data.mascotImageName() == nil ? 110 : 80, height: 48)
             }
-            if let weekStatus {
+            if let barStatus {
                 VStack(alignment: .leading, spacing: 4) {
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             Capsule().fill(theme.onAccent.opacity(0.25))
                             Capsule()
                                 .fill(theme.onAccent)
-                                .frame(width: geo.size.width * CGFloat(min(max(weekStatus.ratio, 0), 1)))
+                                .frame(width: geo.size.width * CGFloat(min(max(barStatus.ratio, 0), 1)))
                         }
                     }
                     .frame(height: 6)
-                    Text("Неделя: \(Fmt.money(weekStatus.spent)) из \(Fmt.money(weekStatus.limit))")
+                    Text("\(ReceiptSummary.title(barPeriod)): \(Fmt.money(barStatus.spent)) из \(Fmt.money(barStatus.limit))")
                         .font(.caption)
                         .foregroundStyle(theme.onAccent.opacity(0.9))
                 }

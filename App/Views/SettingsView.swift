@@ -11,6 +11,8 @@ struct SettingsView: View {
 
     @AppStorage(SharedSettings.Key.mascot, store: AppGroup.defaults)
     private var mascotRaw: String = Mascots.randomID
+    @AppStorage(SharedSettings.Key.homePeriod, store: AppGroup.defaults)
+    private var homePeriodRaw: String = AnalyticsPeriod.day.rawValue
 
     private var mascotTitle: String {
         switch mascotRaw {
@@ -32,10 +34,20 @@ struct SettingsView: View {
                     } label: {
                         LabeledContent("Оформление", value: "\(themeID.title) · \(palette.name)")
                     }
+                    Picker("Крупно на главной", selection: $homePeriodRaw) {
+                        ForEach(AnalyticsPeriod.allCases) { period in
+                            Text(ReceiptSummary.title(period)).tag(period.rawValue)
+                        }
+                    }
                     NavigationLink {
                         MascotSettingsView()
                     } label: {
                         LabeledContent("Персонаж", value: mascotTitle)
+                    }
+                    NavigationLink {
+                        AppIconSettingsView()
+                    } label: {
+                        LabeledContent("Иконка приложения", value: AppIconSettingsView.currentTitle)
                     }
                     NavigationLink {
                         RecurringView()

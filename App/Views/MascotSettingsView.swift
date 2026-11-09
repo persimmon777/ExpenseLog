@@ -1,5 +1,4 @@
 import SwiftUI
-import WidgetKit
 
 /// Настройки → «Персонаж»: выбор стикера или «каждый день новый».
 /// Настроение персонажа зависит от того, какая часть «Можно сегодня» уже потрачена.
@@ -133,8 +132,7 @@ struct MascotSettingsView: View {
 
     private func choose(_ id: String) {
         selected = id
-        // Главная перерисуется сама, виджетам нужно сказать.
+        // Главная берёт персонажа из настроек — попросим её перерисоваться.
         store.objectWillChange.send()
-        WidgetCenter.shared.reloadAllTimelines()
     }
 }
