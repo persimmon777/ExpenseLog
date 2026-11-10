@@ -31,6 +31,11 @@ struct TodayEntry: TimelineEntry {
     /// Виджет видит общую папку с данными приложения.
     let isShared: Bool
     let theme: Theme
+    /// Строки, выбранные в Настройках → «Виджет».
+    var rows: [WidgetRowValue] = []
+
+    /// Показывать строки вместо обычного вида: выбрано несколько строк или не «свободные сегодня».
+    var usesRows: Bool { rows.count > 1 || rows.first.map { !$0.isFreeDay } == true }
 
     static let sample = TodayEntry(
         date: Date(), total: 23.4, count: 3,
@@ -75,7 +80,8 @@ struct TodayProvider: TimelineProvider {
             lastTitle: last.map { data.displayTitle(for: $0) }, lastAmount: last?.amount,
             top: Array(top), dayPlan: data.dayAllowance(now), canSpend: data.canSpendToday(now: now),
             carried: data.carriedIntoToday(now: now), overspentToday: data.overspentToday(now: now),
-            isShared: AppGroup.isShared, theme: Theme.current
+            isShared: AppGroup.isShared, theme: Theme.current,
+            rows: data.widgetRows(now: now)
         )
     }
 }

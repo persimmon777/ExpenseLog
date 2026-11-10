@@ -132,7 +132,7 @@ enum AppGroup {
         let keys = [SharedSettings.Key.theme, SharedSettings.Key.themePalettes, SharedSettings.Key.backupFolderBookmark,
                     SharedSettings.Key.backupFolderName, SharedSettings.Key.lastBackupDate,
                     SharedSettings.Key.notifyWeeklySummary, SharedSettings.Key.notifyLimits, SharedSettings.Key.notifyDebts,
-                    SharedSettings.Key.notifyRecurring, SharedSettings.Key.mascot, SharedSettings.Key.homePeriod, SharedSettings.Key.lastAutoAddDate, SharedSettings.Key.lastAutoAddResult]
+                    SharedSettings.Key.notifyRecurring, SharedSettings.Key.mascot, SharedSettings.Key.homePeriod, SharedSettings.Key.widgetRows, SharedSettings.Key.lastAutoAddDate, SharedSettings.Key.lastAutoAddResult]
         let group = defaults
         for key in keys where group.object(forKey: key) == nil {
             if let value = UserDefaults.standard.object(forKey: key) {
@@ -235,6 +235,8 @@ enum SharedSettings {
         static let mascot = "mascot"
         /// Что крупно на главной: «day», «week» или «month» (`AnalyticsPeriod`).
         static let homePeriod = "homePeriod"
+        /// Строки виджета «Траты за сегодня», JSON — см. `WidgetRowConfig`.
+        static let widgetRows = "widgetRows"
         /// Когда последний раз сработала команда «Добавить SMS банка» и что она сделала.
         static let lastAutoAddDate = "lastAutoAddDate"
         static let lastAutoAddResult = "lastAutoAddResult"

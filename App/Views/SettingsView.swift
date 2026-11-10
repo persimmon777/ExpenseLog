@@ -45,6 +45,11 @@ struct SettingsView: View {
                         LabeledContent("Персонаж", value: mascotTitle)
                     }
                     NavigationLink {
+                        WidgetSettingsView()
+                    } label: {
+                        LabeledContent("Виджет", value: Fmt.plural(WidgetRowConfig.saved.count, "строка", "строки", "строк"))
+                    }
+                    NavigationLink {
                         AppIconSettingsView()
                     } label: {
                         LabeledContent("Иконка приложения", value: AppIconSettingsView.currentTitle)
