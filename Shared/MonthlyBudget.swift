@@ -161,8 +161,12 @@ extension AppData {
         let weekEnd = cal.dateInterval(of: .weekOfYear, for: day)?.end ?? tomorrow
         let daysLeftInWeek = max(1, cal.dateComponents([.day], from: day, to: min(weekEnd, month.end)).day ?? 1)
 
-        let before = expenses(from: month.start, to: day)
-        let today = expenses(from: day, to: tomorrow)
+        // Оплаты запланированного (регулярные платежи, покупки из списка) уже были отложены из месяца —
+        // они не «потрачено сегодня», а идут в траты месяца.
+        let planPaid = planPaymentIDs
+        let todayAll = expenses(from: day, to: tomorrow)
+        let before = expenses(from: month.start, to: day) + todayAll.filter { planPaid.contains($0.id) }
+        let today = todayAll.filter { !planPaid.contains($0.id) }
         let planned = cal.isDate(day, equalTo: Date(), toGranularity: .month) ? plannedExpenses(now: date) : []
 
         let envelopeIDs = Set(envelopeCategories.map(\.id))
@@ -192,6 +196,22 @@ extension AppData {
             budget: budget, daysLeft: daysLeft, daysLeftInWeek: daysLeftInWeek, envelopes: envelopes,
             freeSpentBefore: sum(before, nil), freeSpentToday: sum(today, nil), freePlanned: plannedSum(nil)
         )
+    }
+
+    /// Операции, которыми оплачено запланированное: регулярный платёж или пункт списка покупок.
+    var planPaymentIDs: Set<UUID> {
+        Set(recurring.compactMap { $0.isIncome ? nil : $0.lastPaidTransactionID }
+            + shoppingList.compactMap { $0.isDone ? $0.matchedTransactionID : nil })
+    }
+
+    /// Сумма за период для главной. В бюджете на месяц за день не считаются оплаты запланированного
+    /// (они заложены на месяц); неделя и месяц — все траты.
+    func homeTotal(_ period: AnalyticsPeriod, now: Date = Date()) -> Decimal {
+        guard isMonthlyBudget, period == .day else { return expenseTotal(in: period.component, containing: now) }
+        let planPaid = planPaymentIDs
+        return expenses(in: .day, containing: now)
+            .filter { !planPaid.contains($0.id) }
+            .reduce(Decimal(0)) { $0 + $1.amount }
     }
 
     /// Расчётная неделя в режиме «На месяц»: потрачено за неделю до сегодня + (свободные + конверты в день) × дни

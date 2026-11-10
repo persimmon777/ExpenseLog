@@ -40,7 +40,7 @@ struct ReceiptSummary: View {
                         Text(Fmt.monthYear(Date()))
                             .font(.caption)
                             .foregroundStyle(theme.inkSoft)
-                        AmountRow(title: Self.title(main), value: Fmt.money(data.expenseTotal(in: main.component)), emphasized: true)
+                        AmountRow(title: Self.title(main), value: Fmt.money(data.homeTotal(main)), emphasized: true)
                         if let status = data.planStatus(main) {
                             LimitBar(status: status)
                             Text((main == .day && hasEnvelopes ? "Свободные: " : "")
@@ -64,7 +64,7 @@ struct ReceiptSummary: View {
                 }
                 RuleLine()
                 ForEach(AnalyticsPeriod.allCases.filter { $0 != main }) { period in
-                    AmountRow(title: Self.title(period), value: planValue(data.planStatus(period), spent: data.expenseTotal(in: period.component)))
+                    AmountRow(title: Self.title(period), value: planValue(data.planStatus(period), spent: data.homeTotal(period)))
                 }
                 if let snapshot, snapshot.plannedTotal > 0 {
                     Text("В бюджете месяца ещё запланировано \(Fmt.money(snapshot.plannedTotal))")
