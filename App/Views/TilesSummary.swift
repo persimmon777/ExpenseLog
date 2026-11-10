@@ -28,7 +28,7 @@ struct TilesSummary: View {
             LazyVGrid(columns: columns, spacing: 12) {
                 if main == .month {
                     // Месяц уже крупно — в плитке «Сегодня».
-                    tile(title: "Сегодня", value: Fmt.money(data.expenseTotal(in: .day)),
+                    tile(title: "Сегодня", value: Fmt.money(data.homeTotal(.day)),
                          subtitle: data.planStatus(.day).map { "из \(Fmt.money(max($0.limit, 0)))" })
                 } else {
                     tile(title: "Месяц", value: Fmt.money(data.expenseTotal(in: .month)),
@@ -65,7 +65,7 @@ struct TilesSummary: View {
                     Text(ReceiptSummary.title(main))
                         .font(.subheadline)
                         .foregroundStyle(theme.onAccent.opacity(0.9))
-                    Text(Fmt.money(data.expenseTotal(in: main.component)))
+                    Text(Fmt.money(data.homeTotal(main)))
                         .font(theme.amountFont(.title, weight: .bold))
                         .foregroundStyle(theme.onAccent)
                         .lineLimit(1)
