@@ -60,6 +60,7 @@ extension AppData {
     /// экономия — увеличивает. Пример: 70 в неделю (10 в день), в понедельник потрачено 22 →
     /// со вторника по воскресенье по (70 − 22) / 6 = 8.
     func dayAllowance(_ date: Date) -> Decimal? {
+        if isMonthlyBudget { return monthlySnapshot(date)?.freeDayAllowance }
         let cal = Fmt.calendar
         let day = cal.startOfDay(for: date)
         guard let week = weekPlan(containing: day) else { return nil }
@@ -73,24 +74,32 @@ extension AppData {
 
     /// Перерасход только за сегодня: траты сегодня сверх сегодняшнего лимита (лимит ниже нуля считается нулём).
     func overspentToday(now: Date = Date()) -> Decimal {
+        if isMonthlyBudget {
+            guard let s = monthlySnapshot(now) else { return 0 }
+            return max(0, s.freeSpentTodayTotal - max(s.freeDayAllowance, 0))
+        }
         guard let allowance = dayAllowance(now) else { return 0 }
         return max(0, spent(onDay: now) - max(allowance, 0))
     }
 
     /// Сколько ещё можно потратить сегодня (отрицательное — перерасход).
     func canSpendToday(now: Date = Date()) -> Decimal? {
+        if isMonthlyBudget { return monthlySnapshot(now)?.freeCanSpendToday }
         guard let allowance = dayAllowance(now) else { return nil }
         return allowance - spent(onDay: now)
     }
 
     /// Перенесено на сегодня с прошлых дней: плюс — остаток, минус — перерасход.
     func carriedIntoToday(now: Date = Date()) -> Decimal {
+        // В бюджете на месяц перенос не показываем: остаток месяца каждый день заново делится на дни.
+        if isMonthlyBudget { return 0 }
         guard let allowance = dayAllowance(now), let base = dayPlan(now) else { return 0 }
         return allowance - base
     }
 
     /// План на месяц = сумма дневных планов всех дней месяца.
     func monthPlan(containing date: Date) -> Decimal? {
+        if isMonthlyBudget { return monthBudget(containing: date) }
         let cal = Fmt.calendar
         guard let month = cal.dateInterval(of: .month, for: date) else { return nil }
         var total = Decimal(0)
@@ -109,6 +118,13 @@ extension AppData {
 
     /// План на период аналитики.
     func plan(_ period: AnalyticsPeriod, containing date: Date) -> Decimal? {
+        if isMonthlyBudget {
+            switch period {
+            case .day: return dayAllowance(date)
+            case .week: return expectedWeekInMonthlyMode(containing: date)
+            case .month: return monthBudget(containing: date)
+            }
+        }
         switch period {
         case .day: return dayAllowance(date)
         case .week: return weekPlan(containing: date)
@@ -119,6 +135,11 @@ extension AppData {
     /// «Потрачено из плана» за период — для полоски.
     func planStatus(_ period: AnalyticsPeriod, containing date: Date = Date()) -> LimitStatus? {
         // День может уйти в минус из-за перерасхода прошлых дней — его всё равно показываем.
+        if isMonthlyBudget, period == .day {
+            // День в бюджете на месяц — только свободные деньги (у конвертов свои полоски).
+            guard let s = monthlySnapshot(date) else { return nil }
+            return LimitStatus(spent: s.freeSpentTodayTotal, limit: s.freeDayAllowance)
+        }
         guard let plan = plan(period, containing: date), plan > 0 || period == .day else { return nil }
         return LimitStatus(spent: expenseTotal(in: period.component, containing: date), limit: plan)
     }

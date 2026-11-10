@@ -68,8 +68,10 @@ struct TodayProvider: TimelineProvider {
         let top = data.summary(.day, containing: now).categories.prefix(3).map {
             TopCategory(name: $0.name, emoji: $0.emoji, colorHex: $0.colorHex, total: $0.total)
         }
+        // В бюджете на месяц «потрачено X из Y» — из свободных денег (как «Можно сегодня»).
+        let shownTotal = data.isMonthlyBudget ? (data.planStatus(.day, containing: now)?.spent ?? total) : total
         return TodayEntry(
-            date: now, total: total, count: today.count,
+            date: now, total: shownTotal, count: today.count,
             lastTitle: last.map { data.displayTitle(for: $0) }, lastAmount: last?.amount,
             top: Array(top), dayPlan: data.dayAllowance(now), canSpend: data.canSpendToday(now: now),
             carried: data.carriedIntoToday(now: now), overspentToday: data.overspentToday(now: now),

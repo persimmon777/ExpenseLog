@@ -57,7 +57,9 @@ struct SettingsView: View {
                     NavigationLink {
                         WeeklyPlanView()
                     } label: {
-                        LabeledContent("План трат", value: store.data.currentBasePlan.map { "\(Fmt.money($0)) в неделю" } ?? "не задан")
+                        LabeledContent("План трат", value: store.data.isMonthlyBudget
+                                       ? (store.data.monthBudget(containing: Date()).map { "\(Fmt.money($0)) в месяц" } ?? "не задан")
+                                       : (store.data.currentBasePlan.map { "\(Fmt.money($0)) в неделю" } ?? "не задан"))
                     }
                     NavigationLink {
                         BackupView()

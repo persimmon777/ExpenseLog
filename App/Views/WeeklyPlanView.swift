@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// «План трат»: план на неделю по умолчанию и ручные изменения отдельных недель.
-/// План на день = неделя / 7, на месяц = сумма дней месяца.
+/// «План трат»: режим «На неделю» (план по умолчанию и ручные недели; день = неделя / 7, месяц = сумма дней)
+/// или «На месяц» (`MonthlyBudgetSections`: бюджет, свои месяцы, структура по конвертам).
 struct WeeklyPlanView: View {
     @EnvironmentObject private var store: SpentStore
     @Environment(\.theme) private var theme
@@ -16,6 +16,59 @@ struct WeeklyPlanView: View {
         let weeks = weekStarts()
 
         Form {
+            Section {
+                Picker("Как считать", selection: Binding(
+                    get: { data.budgetMode },
+                    set: { mode in store.mutate { $0.setBudgetMode(mode) } }
+                )) {
+                    ForEach(BudgetMode.allCases) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+            } footer: {
+                Text(data.isMonthlyBudget
+                     ? "Сумма на месяц делится на оставшиеся дни. Запланированные траты (список покупок, регулярные платежи) откладываются сразу. Часть бюджета можно разложить по конвертам-категориям."
+                     : "План на неделю делится на оставшиеся дни недели.")
+            }
+
+            if data.isMonthlyBudget {
+                MonthlyBudgetSections()
+            } else {
+                weeklySections(data: data, weeks: weeks)
+            }
+        }
+        .themedBackground(theme)
+        .navigationTitle("План трат")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Готово") {
+                    baseFocused = false
+                    // поле бюджета на месяц живёт в своём разделе — убираем клавиатуру для любого поля
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
+            }
+        }
+        .onAppear {
+            guard !loaded else { return }
+            loaded = true
+            baseText = store.data.currentBasePlan.map(Self.text) ?? ""
+        }
+        .sheet(item: $editingWeek) { week in
+            WeekPlanEditSheet(weekStart: week.start)
+                .environmentObject(store)
+                .environment(\.theme, theme)
+                .preferredColorScheme(theme.colorScheme)
+                .tint(theme.accent)
+        }
+    }
+
+    // MARK: Части
+
+    @ViewBuilder
+    private func weeklySections(data: AppData, weeks: [Date]) -> some View {
             Section {
                 HStack {
                     TextField("Без плана", text: $baseText)
@@ -52,31 +105,7 @@ struct WeeklyPlanView: View {
             } footer: {
                 Text("Нажмите на неделю, чтобы задать для неё свой план — например, если ждёте больших покупок.")
             }
-        }
-        .themedBackground(theme)
-        .navigationTitle("План трат")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Готово") { baseFocused = false }
-            }
-        }
-        .onAppear {
-            guard !loaded else { return }
-            loaded = true
-            baseText = store.data.currentBasePlan.map(Self.text) ?? ""
-        }
-        .sheet(item: $editingWeek) { week in
-            WeekPlanEditSheet(weekStart: week.start)
-                .environmentObject(store)
-                .environment(\.theme, theme)
-                .preferredColorScheme(theme.colorScheme)
-                .tint(theme.accent)
-        }
     }
-
-    // MARK: Части
 
     private func weekRow(_ start: Date, data: AppData) -> some View {
         let cal = Fmt.calendar

@@ -167,6 +167,8 @@ struct ShoppingItem: Identifiable, Codable, Hashable {
     var merchantName: String?
     /// Операция, которой пункт отметился сам.
     var matchedTransactionID: UUID?
+    /// Категория: в режиме «Бюджет на месяц» цена откладывается из её конверта.
+    var categoryID: UUID?
 }
 
 // MARK: - Группы магазинов
@@ -263,6 +265,12 @@ struct AppData: Codable {
     var recurring: [RecurringItem] = []
     /// Группы магазинов («SOSEDI…» → «Соседи»).
     var merchantGroups: [MerchantGroup] = []
+    /// Как считать план: на неделю или бюджет на месяц (`Shared/MonthlyBudget.swift`).
+    var budgetMode: BudgetMode = .weekly
+    /// История бюджета на месяц по умолчанию (`from` — 1-е число месяца).
+    var monthlyBudgetBase: [WeeklyPlanEntry] = []
+    /// Свой бюджет отдельных месяцев: «yyyy-MM» → сумма (0 — без бюджета).
+    var monthlyBudgetOverrides: [String: Decimal] = [:]
 
     init() {}
 
@@ -273,6 +281,7 @@ struct AppData: Codable {
         case deletedFingerprints, limitAlertsSent, lastBalance, lastBalanceDate
         case balanceSetManually, merchantNames, shoppingList
         case weeklyPlanBase, weeklyPlanOverrides, recurring, merchantGroups
+        case budgetMode, monthlyBudgetBase, monthlyBudgetOverrides
     }
 
     init(from decoder: Decoder) throws {
@@ -293,6 +302,9 @@ struct AppData: Codable {
         weeklyPlanOverrides = try c.decodeIfPresent([String: Decimal].self, forKey: .weeklyPlanOverrides) ?? [:]
         recurring = try c.decodeIfPresent([RecurringItem].self, forKey: .recurring) ?? []
         merchantGroups = try c.decodeIfPresent([MerchantGroup].self, forKey: .merchantGroups) ?? []
+        budgetMode = (try? c.decodeIfPresent(BudgetMode.self, forKey: .budgetMode)) ?? .weekly
+        monthlyBudgetBase = try c.decodeIfPresent([WeeklyPlanEntry].self, forKey: .monthlyBudgetBase) ?? []
+        monthlyBudgetOverrides = try c.decodeIfPresent([String: Decimal].self, forKey: .monthlyBudgetOverrides) ?? [:]
         schemaVersion = AppData.currentSchemaVersion
     }
 
