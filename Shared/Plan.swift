@@ -138,7 +138,7 @@ extension AppData {
         if isMonthlyBudget, period == .day {
             // День в бюджете на месяц — только свободные деньги (у конвертов свои полоски).
             guard let s = monthlySnapshot(date) else { return nil }
-            return LimitStatus(spent: s.freeSpentTodayTotal, limit: s.freeDayAllowance)
+            return LimitStatus(spent: s.freeSpentTodayTotal, limit: max(s.freeDayAllowance, 0))
         }
         guard let plan = plan(period, containing: date), plan > 0 || period == .day else { return nil }
         return LimitStatus(spent: expenseTotal(in: period.component, containing: date), limit: plan)

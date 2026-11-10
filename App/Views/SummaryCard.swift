@@ -47,6 +47,11 @@ struct ReceiptSummary: View {
                                  + (main == .day ? todayLine(status, carried: data.carriedIntoToday()) : periodLine(status)))
                                 .font(.caption2)
                                 .foregroundStyle(status.level == .over ? theme.danger : theme.inkSoft)
+                            if main == .day, let shortage = snapshot?.freeShortage {
+                                Text("Свободных денег месяца не хватает на запланированное: −\(Fmt.money(shortage))")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(theme.danger)
+                            }
                         }
                     }
                     if let mascot = data.mascotImageName() {
