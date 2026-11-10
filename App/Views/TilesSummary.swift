@@ -54,9 +54,10 @@ struct TilesSummary: View {
     private func hero(_ data: AppData) -> some View {
         let values = data.dailyTotals(lastDays: 14).map { NSDecimalNumber(decimal: $0).doubleValue }
         let mainStatus = data.planStatus(main)
-        // Под суммой дня — полоска недели (как раньше), под неделей/месяцем — их собственная.
-        let barPeriod: AnalyticsPeriod = main == .day ? .week : main
-        let barStatus = main == .day ? data.planStatus(.week) : mainStatus
+        // Полоска — того периода, что показан крупно: потрачено из расчётного.
+        let barPeriod = main
+        let barStatus = mainStatus
+        let shortage = main == .day ? data.monthlySnapshot()?.freeShortage : nil
         let shape = RoundedRectangle(cornerRadius: theme.cornerRadius, style: .continuous)
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .bottom, spacing: 12) {
@@ -108,6 +109,12 @@ struct TilesSummary: View {
                     Text("\(ReceiptSummary.title(barPeriod)): \(Fmt.money(barStatus.spent)) из \(Fmt.money(barStatus.limit))")
                         .font(.caption)
                         .foregroundStyle(theme.onAccent.opacity(0.9))
+                    if let shortage {
+                        Text("Свободных денег месяца не хватает на запланированное: −\(Fmt.money(shortage))")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(theme.onAccent)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
         }

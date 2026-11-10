@@ -84,7 +84,14 @@ struct MonthlyBudgetSnapshot {
     }
     /// Потрачено сегодня из свободных: траты без конверта + перерасход конвертов за сегодня.
     var freeSpentTodayTotal: Decimal { freeSpentToday + overflowToday }
-    var freeCanSpendToday: Decimal { freeDayAllowance - freeSpentTodayTotal }
+    /// Сколько ещё можно сегодня из свободных. Если свободных месяца не хватает на запланированное,
+    /// дневная сумма считается нулём (это не перерасход за сегодня — см. `freeShortage`).
+    var freeCanSpendToday: Decimal { max(freeDayAllowance, 0) - freeSpentTodayTotal }
+    /// На сколько свободных денег месяца не хватает (из-за запланированного и прошлых трат). `nil` — хватает.
+    var freeShortage: Decimal? {
+        let left = freeTotal - freeSpentBefore - freePlanned - overflowBefore
+        return left < 0 ? -left : nil
+    }
     /// Сколько свободных осталось на месяц (с учётом запланированного).
     var freeRemaining: Decimal { freeTotal - freeSpentBefore - freePlanned - overflowBefore - freeSpentTodayTotal }
 
