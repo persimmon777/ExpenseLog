@@ -11,6 +11,8 @@ struct ShoppingListSheet: View {
     @State private var editing: ShoppingItem?
     /// Открыта строка добавления (по «+» рядом с «Купить»).
     @State private var isAdding = false
+    /// Пункт, отмеченный вручную в бюджете на месяц: спросить, добавить ли трату.
+    @State private var askExpenseFor: ShoppingItem?
     @FocusState private var focus: Field?
 
     private enum Field {
@@ -115,6 +117,21 @@ struct ShoppingListSheet: View {
             .listStyle(.insetGrouped)
             .themedBackground(theme)
             .navigationTitle("Планируемое")
+            .confirmationDialog(
+                askExpenseFor.map { "Добавить трату \(Fmt.money($0.price ?? 0))?" } ?? "",
+                isPresented: Binding(get: { askExpenseFor != nil }, set: { if !$0 { askExpenseFor = nil } }),
+                titleVisibility: .visible,
+                presenting: askExpenseFor
+            ) { item in
+                Button("Добавить трату") {
+                    let id = item.id
+                    withAnimation { store.mutate { $0.buyShoppingItemWithExpense(id) } }
+                }
+                Button("Жду SMS об оплате") {}
+                Button("Отменить", role: .cancel) {}
+            } message: { item in
+                Text("Если платили наличными, добавьте трату — иначе цена «\(item.title)» пропадёт из бюджета. Если оплата придёт по SMS, пункт отметится сам, а пока цена останется в запланированном.")
+            }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -182,7 +199,12 @@ struct ShoppingListSheet: View {
     private func itemRow(_ item: ShoppingItem) -> some View {
         Button {
             let id = item.id
-            withAnimation { store.mutate { $0.toggleShoppingItem(id) } }
+            // В бюджете на месяц ручная галочка без SMS убрала бы цену из запланированного — спросим про трату.
+            if store.data.isMonthlyBudget, !item.isDone, (item.price ?? 0) > 0, item.matchedTransactionID == nil {
+                askExpenseFor = item
+            } else {
+                withAnimation { store.mutate { $0.toggleShoppingItem(id) } }
+            }
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle")

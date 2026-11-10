@@ -19,6 +19,12 @@ struct TilesSummary: View {
         let data = store.data
         VStack(spacing: 12) {
             hero(data)
+            if let snapshot = data.monthlySnapshot(), !snapshot.envelopes.isEmpty {
+                EnvelopesView(snapshot: snapshot)
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(theme.paper, in: RoundedRectangle(cornerRadius: theme.cornerRadius, style: .continuous))
+            }
             LazyVGrid(columns: columns, spacing: 12) {
                 if main == .month {
                     // Месяц уже крупно — в плитке «Сегодня».
@@ -66,7 +72,8 @@ struct TilesSummary: View {
                     if let mainStatus {
                         Text(mainStatus.spent > mainStatus.limit
                              ? "Перерасход \(Fmt.money(mainStatus.spent - mainStatus.limit))"
-                             : "Можно ещё \(Fmt.money(mainStatus.limit - mainStatus.spent))")
+                             : (main == .day && data.isMonthlyBudget ? "Свободные: можно ещё " : "Можно ещё ")
+                                + Fmt.money(mainStatus.limit - mainStatus.spent))
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(theme.onAccent.opacity(0.9))
                     }

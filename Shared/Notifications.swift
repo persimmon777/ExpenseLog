@@ -35,7 +35,19 @@ extension AppData {
             alerts.append(InstantAlert(id: "limit-\(category.id.uuidString)-\(monthKey)-\(level)", body: body))
         }
 
-        if let status = planStatus(.week, containing: now), let level = threshold(status) {
+        if isMonthlyBudget {
+            if let status = planStatus(.month, containing: now), let level = threshold(status) {
+                let key = "budget|\(monthKey)"
+                if level > (limitAlertsSent[key] ?? 0) {
+                    limitAlertsSent[key] = level
+                    let amounts = "\(Fmt.money(status.spent)) из \(Fmt.money(status.limit))"
+                    let body = level == 100
+                        ? "Бюджет на месяц исчерпан (\(amounts))"
+                        : "Бюджет на месяц: потрачено 80% (\(amounts))"
+                    alerts.append(InstantAlert(id: "budget-\(monthKey)-\(level)", body: body))
+                }
+            }
+        } else if let status = planStatus(.week, containing: now), let level = threshold(status) {
             let weekKey = Fmt.dayKey(weekStart(now))
             let key = "plan|\(weekKey)"
             if level > (limitAlertsSent[key] ?? 0) {

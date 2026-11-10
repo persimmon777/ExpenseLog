@@ -10,12 +10,14 @@ struct ShoppingItemEditSheet: View {
     @State private var title: String
     @State private var priceText: String
     @State private var merchant: String
+    @State private var categoryID: UUID?
 
     init(item: ShoppingItem) {
         self.item = item
         _title = State(initialValue: item.title)
         _priceText = State(initialValue: item.price.map { NSDecimalNumber(decimal: $0).stringValue.replacingOccurrences(of: ".", with: ",") } ?? "")
         _merchant = State(initialValue: item.merchantName ?? "")
+        _categoryID = State(initialValue: item.categoryID)
     }
 
     var body: some View {
@@ -26,6 +28,16 @@ struct ShoppingItemEditSheet: View {
                     TextField("Примерная цена, BYN", text: $priceText)
                         .keyboardType(.decimalPad)
                         .font(theme.amountFont(.body))
+                    Picker("Категория", selection: $categoryID) {
+                        Text("Не выбрана").tag(UUID?.none)
+                        ForEach(store.data.categories) { c in
+                            Text("\(c.emoji) \(c.name)").tag(UUID?.some(c.id))
+                        }
+                    }
+                } footer: {
+                    if store.data.isMonthlyBudget {
+                        Text("Цена откладывается из конверта этой категории; без категории или конверта — из свободных денег.")
+                    }
                 }
                 Section {
                     MerchantField(name: $merchant)
@@ -50,6 +62,7 @@ struct ShoppingItemEditSheet: View {
                         let trimmed = merchant.trimmingCharacters(in: .whitespaces)
                         updated.merchantKey = trimmed.merchantKeyOrNil
                         updated.merchantName = updated.merchantKey == nil ? nil : trimmed
+                        updated.categoryID = categoryID
                         store.mutate { $0.updateShoppingItem(updated) }
                         dismiss()
                     }

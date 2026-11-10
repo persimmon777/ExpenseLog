@@ -31,6 +31,8 @@ struct ReceiptSummary: View {
     var body: some View {
         let data = store.data
         let main = AnalyticsPeriod(rawValue: homePeriodRaw) ?? .day
+        let snapshot = data.monthlySnapshot()
+        let hasEnvelopes = !(snapshot?.envelopes.isEmpty ?? true)
         PaperCard {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .top, spacing: 12) {
@@ -41,7 +43,8 @@ struct ReceiptSummary: View {
                         AmountRow(title: Self.title(main), value: Fmt.money(data.expenseTotal(in: main.component)), emphasized: true)
                         if let status = data.planStatus(main) {
                             LimitBar(status: status)
-                            Text(main == .day ? todayLine(status, carried: data.carriedIntoToday()) : periodLine(status))
+                            Text((main == .day && hasEnvelopes ? "Свободные: " : "")
+                                 + (main == .day ? todayLine(status, carried: data.carriedIntoToday()) : periodLine(status)))
                                 .font(.caption2)
                                 .foregroundStyle(status.level == .over ? theme.danger : theme.inkSoft)
                         }
@@ -50,9 +53,18 @@ struct ReceiptSummary: View {
                         MascotBadge(imageName: mascot, size: 76)
                     }
                 }
+                if let snapshot, hasEnvelopes {
+                    RuleLine()
+                    EnvelopesView(snapshot: snapshot)
+                }
                 RuleLine()
                 ForEach(AnalyticsPeriod.allCases.filter { $0 != main }) { period in
                     AmountRow(title: Self.title(period), value: planValue(data.planStatus(period), spent: data.expenseTotal(in: period.component)))
+                }
+                if let snapshot, snapshot.plannedTotal > 0 {
+                    Text("В бюджете месяца ещё запланировано \(Fmt.money(snapshot.plannedTotal))")
+                        .font(.caption2)
+                        .foregroundStyle(theme.inkSoft)
                 }
                 AmountRow(title: "Прогноз на месяц", value: Fmt.money(data.monthForecast()))
                 Button(action: onPlannedTap) {

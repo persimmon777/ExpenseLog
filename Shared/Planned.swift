@@ -19,6 +19,8 @@ struct PlannedLine: Identifiable {
     let kind: Kind
     /// Дата уже прошла, а оплата/поступление не найдены.
     let isOverdue: Bool
+    /// Категория (для конвертов бюджета на месяц).
+    var categoryID: UUID? = nil
 }
 
 extension RecurringItem {
@@ -49,7 +51,7 @@ extension AppData {
                 lines.append(PlannedLine(
                     id: "recurring-\(item.id.uuidString)-\(Fmt.dayKey(date))",
                     title: item.title, amount: item.amount, date: date, kind: .recurring,
-                    isOverdue: date < today
+                    isOverdue: date < today, categoryID: item.categoryID
                 ))
             }
         }
@@ -60,7 +62,7 @@ extension AppData {
     func plannedExpenses(now: Date = Date()) -> [PlannedLine] {
         let shopping = shoppingToBuy.map {
             PlannedLine(id: "shopping-\($0.id.uuidString)", title: $0.title, amount: $0.price ?? 0,
-                        date: nil, kind: .shopping, isOverdue: false)
+                        date: nil, kind: .shopping, isOverdue: false, categoryID: $0.categoryID)
         }
         let regular = pendingRecurring(income: false, now: now).sorted { ($0.date ?? now) < ($1.date ?? now) }
         return shopping + regular

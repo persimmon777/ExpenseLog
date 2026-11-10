@@ -75,7 +75,9 @@ enum Mascots {
 extension AppData {
     /// Настроение персонажа сегодня: потрачено сегодня / «Можно сегодня».
     func mascotMood(now: Date = Date()) -> Int {
-        Mascots.mood(spent: expenseTotal(onDay: now), allowance: dayAllowance(now))
+        // В бюджете на месяц — свободные деньги дня (`planStatus(.day)`), в плане на неделю — все траты дня.
+        guard let status = planStatus(.day, containing: now) else { return Mascots.mood(spent: 0, allowance: nil) }
+        return Mascots.mood(spent: status.spent, allowance: status.limit)
     }
 
     /// Имя картинки персонажа на сегодня или nil, если персонаж выключен.

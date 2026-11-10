@@ -36,7 +36,9 @@ struct TodayWidgetView: View {
         case .accessoryRectangular:
             rectangular
         case .accessoryInline:
-            if let canSpend = entry.canSpend {
+            if entry.usesRows, let row = entry.rows.first {
+                Text("\(row.title): \(row.isOver ? "−" : "")\(Fmt.money(abs(row.canSpend)))")
+            } else if let canSpend = entry.canSpend {
                 Text(entry.overspentToday > 0 ? "Перерасход: \(Fmt.money(entry.overspentToday))" : "Можно: \(Fmt.money(max(canSpend, 0)))")
             } else {
                 Text("Coin: \(Fmt.money(entry.total))")
@@ -60,6 +62,8 @@ struct TodayWidgetView: View {
                     .foregroundStyle(theme.inkSoft)
                     .lineLimit(5)
                     .minimumScaleFactor(0.8)
+            } else if entry.usesRows {
+                rowsView
             } else if let canSpend = entry.canSpend, let plan = entry.dayPlan {
                 let over = entry.overspentToday > 0
                 Text(over ? "Перерасход сегодня" : "Можно сегодня")
@@ -98,7 +102,7 @@ struct TodayWidgetView: View {
                     .lineLimit(2)
             }
             Spacer(minLength: 0)
-            if let title = entry.lastTitle, let amount = entry.lastAmount {
+            if !entry.usesRows, let title = entry.lastTitle, let amount = entry.lastAmount {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(title)
                         .font(.caption)
@@ -145,11 +149,69 @@ struct TodayWidgetView: View {
         }
     }
 
+    // MARK: Строки (Настройки → «Виджет»)
+
+    /// Первая строка крупно, остальные — компактно: название, сколько можно, полоска.
+    private var rowsView: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(Array(entry.rows.enumerated()), id: \.element.id) { index, row in
+                if index == 0 {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(rowTitle(row))
+                            .font(.caption)
+                            .foregroundStyle(row.isOver ? theme.danger : theme.inkSoft)
+                            .lineLimit(1)
+                        Text(rowAmount(row))
+                            .font(theme.amountFont(.title3, weight: .bold))
+                            .foregroundStyle(row.isOver ? theme.danger : theme.ink)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                        bar(ratio: row.ratio, color: row.isOver ? theme.danger : theme.accent)
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 4) {
+                            Text(rowTitle(row))
+                                .font(.caption2)
+                                .foregroundStyle(theme.inkSoft)
+                                .lineLimit(1)
+                            Spacer(minLength: 2)
+                            Text(rowAmount(row))
+                                .font(theme.amountFont(.caption, weight: .bold))
+                                .foregroundStyle(row.isOver ? theme.danger : theme.ink)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.6)
+                        }
+                        bar(ratio: row.ratio, color: row.isOver ? theme.danger : theme.accent)
+                    }
+                }
+            }
+        }
+    }
+
+    private func rowTitle(_ row: WidgetRowValue) -> String {
+        (row.emoji.map { $0 + " " } ?? "") + (row.isOver ? row.title + " · перерасход" : row.title)
+    }
+
+    private func rowAmount(_ row: WidgetRowValue) -> String {
+        (row.isOver ? "−" : "") + Fmt.money(abs(row.canSpend))
+    }
+
     // MARK: Экран блокировки
 
     private var rectangular: some View {
         VStack(alignment: .leading, spacing: 2) {
-            if let canSpend = entry.canSpend, let plan = entry.dayPlan {
+            if entry.usesRows {
+                ForEach(entry.rows.prefix(2)) { row in
+                    Text("\(row.title): \(row.isOver ? "−" : "")\(Fmt.money(abs(row.canSpend)))")
+                        .font(row.id == entry.rows.first?.id ? .headline : .caption)
+                        .widgetAccentable()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                    ProgressView(value: min(max(row.ratio, 0), 1))
+                        .tint(.primary)
+                }
+            } else if let canSpend = entry.canSpend, let plan = entry.dayPlan {
                 Text(entry.overspentToday > 0 ? "Перерасход: \(Fmt.money(entry.overspentToday))" : "Можно: \(Fmt.money(max(canSpend, 0)))")
                     .font(.headline)
                     .widgetAccentable()
